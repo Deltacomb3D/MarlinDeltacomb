@@ -7339,6 +7339,7 @@ inline void gcode_M17() {
    * - Initial retract, if current temperature is hot enough
    * - Park the nozzle at the given position
    * - Call unload_filament (if a length was specified)
+   * - Save job recovery info (if enabled POWER_LOSS_RECOVERY)
    *
    * Returns 'true' if pause was completed, 'false' for abort
    */
@@ -7391,6 +7392,11 @@ inline void gcode_M17() {
     // Unload the filament
     if (unload_length)
       unload_filament(unload_length, show_lcd);
+
+    // Save Job Recovery
+    #if ENABLED(POWER_LOSS_RECOVERY)
+      save_job_recovery_info(true);
+    #endif
 
     return true;
   }
@@ -11144,7 +11150,7 @@ inline void gcode_M502() {
    *  Default values are used for omitted arguments.
    */
   inline void gcode_M600() {
-    point_t park_point = NOZZLE_PARK_POINT;
+    point_t park_point = FILAMENT_CHANGE_PARK_POINT;
 
     if (get_target_extruder_from_command(600)) return;
 
@@ -11331,7 +11337,7 @@ inline void gcode_M502() {
    *  Default values are used for omitted arguments.
    */
   inline void gcode_M701() {
-    point_t park_point = NOZZLE_PARK_POINT;
+    point_t park_point = FILAMENT_CHANGE_PARK_POINT;
 
     #if ENABLED(NO_MOTION_BEFORE_HOMING)
       // Only raise Z if the machine is homed
@@ -11391,7 +11397,7 @@ inline void gcode_M502() {
    *  Default values are used for omitted arguments.
    */
   inline void gcode_M702() {
-    point_t park_point = NOZZLE_PARK_POINT;
+    point_t park_point = FILAMENT_CHANGE_PARK_POINT;
 
     #if ENABLED(NO_MOTION_BEFORE_HOMING)
       // Only raise Z if the machine is homed
@@ -15531,7 +15537,7 @@ void loop() {
       else {
         process_next_command();
         #if ENABLED(POWER_LOSS_RECOVERY)
-          if (card.cardOK && card.sdprinting) save_job_recovery_info();
+          if (card.cardOK && card.sdprinting) save_job_recovery_info(false);
         #endif
       }
 

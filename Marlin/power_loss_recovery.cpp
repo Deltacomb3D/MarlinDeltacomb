@@ -137,39 +137,60 @@ void check_print_job_recovery() {
           strcpy_P(job_recovery_commands[ind++], PSTR("M420 S0 Z0"));               // Leveling off before G92 or G28
         #endif
 
+        #if !IS_KINEMATIC
         strcpy_P(job_recovery_commands[ind++], PSTR("G92.0 Z0"));                   // Ensure Z is equal to 0
         strcpy_P(job_recovery_commands[ind++], PSTR("G1 Z2"));                      // Raise Z by 2mm (we hope!)
         strcpy_P(job_recovery_commands[ind++], PSTR("G28 R0"
           #if ENABLED(MARLIN_DEV_MODE)
             " S"
-          #elif !IS_KINEMATIC
+          #else
             " X Y"                                                                  // Home X and Y for Cartesian
           #endif
         ));
+        #endif
 
-        char str_1[16], str_2[16];
+        char str_X[16], str_Y[16], str_Z[16], str_E[16];
 
         #if HAS_LEVELING
           if (job_recovery_info.fade || job_recovery_info.leveling) {
             // Restore leveling state before G92 sets Z
             // This ensures the steppers correspond to the native Z
-            dtostrf(job_recovery_info.fade, 1, 1, str_1);
-            sprintf_P(job_recovery_commands[ind++], PSTR("M420 S%i Z%s"), int(job_recovery_info.leveling), str_1);
+            dtostrf(job_recovery_info.fade, 1, 1, str_Z);
+            sprintf_P(job_recovery_commands[ind++], PSTR("M420 S%i Z%s"), int(job_recovery_info.leveling), str_Z);
           }
         #endif
 
-        dtostrf(job_recovery_info.current_position[Z_AXIS] + 2, 1, 3, str_1);
+        #if !IS_KINEMATIC
+          dtostrf(job_recovery_info.current_position[Z_AXIS] + 2, 1, 3, str_Z);
+        #else
+          dtostrf(job_recovery_info.current_position[X_AXIS] , 1, 3, str_X);
+          dtostrf(job_recovery_info.current_position[Y_AXIS] , 1, 3, str_Y);
+          dtostrf(job_recovery_info.current_position[Z_AXIS] , 1, 3, str_Z);
+        #endif
+
         dtostrf(job_recovery_info.current_position[E_CART]
           #if ENABLED(SAVE_EACH_CMD_MODE)
             - 5
           #endif
-          , 1, 3, str_2
+          , 1, 3, str_E
         );
-        sprintf_P(job_recovery_commands[ind++], PSTR("G92.0 Z%s E%s"), str_1, str_2); // Current Z + 2 and E
+
+        #if IS_KINEMATIC
+          sprintf_P(job_recovery_commands[ind++], PSTR("G1 X%s Y%s Z%s F5000"), str_X, str_Y, str_Z); // Move to Z Position
+        #endif
+
+        sprintf_P(job_recovery_commands[ind++], PSTR("G92.0 Z%s E%s"), str_Z, str_E); // Current Z and E
+
+        // purge a small quantity of filament 
+        strcpy_P(job_recovery_commands[ind++], PSTR("G91"));
+        sprintf_P(job_recovery_commands[ind++], PSTR("G1 E%i"), PAUSE_PARK_RETRACT_LENGTH);
+        strcpy_P(job_recovery_commands[ind++], PSTR("G90"));
 
         uint8_t r = job_recovery_info.cmd_queue_index_r, c = job_recovery_info.commands_in_queue;
         while (c--) {
-          strcpy(job_recovery_commands[ind++], job_recovery_info.command_queue[r]);
+          // remove "M125" if the job recovery was saved by the pause routine
+          if(strcmp(job_recovery_info.command_queue[r], "M125\0") != 0)
+            strcpy(job_recovery_commands[ind++], job_recovery_info.command_queue[r]);
           r = (r + 1) % BUFSIZE;
         }
 
@@ -195,7 +216,7 @@ void check_print_job_recovery() {
 /**
  * Save the current machine state to the power-loss recovery file
  */
-void save_job_recovery_info() {
+void save_job_recovery_info(const bool force) {
   #if SAVE_INFO_INTERVAL_MS > 0
     static millis_t next_save_ms; // = 0;  // Init on reset
     millis_t ms = millis();
@@ -214,7 +235,11 @@ void save_job_recovery_info() {
         ELAPSED(ms, next_save_ms) ||
       #endif
       // Save on every new Z height
-      (current_position[Z_AXIS] > 0 && current_position[Z_AXIS] > job_recovery_info.current_position[Z_AXIS])
+      #if ENABLED(SAVE_EACH_Z_HEIGHT)
+        (current_position[Z_AXIS] > 0 && current_position[Z_AXIS] > job_recovery_info.current_position[Z_AXIS]) ||
+      #endif
+      // Force save on request
+      force
     #endif
   ) {
     #if SAVE_INFO_INTERVAL_MS > 0
@@ -226,7 +251,13 @@ void save_job_recovery_info() {
     job_recovery_info.valid_foot = job_recovery_info.valid_head;
 
     // Machine state
-    COPY(job_recovery_info.current_position, current_position);
+    if (!did_pause_print)
+      COPY(job_recovery_info.current_position, current_position);
+    else {
+      COPY(job_recovery_info.current_position, resume_position);
+      job_recovery_info.current_position[3] = resume_position[3] - PAUSE_PARK_RETRACT_LENGTH - 2; 
+    }
+
     job_recovery_info.feedrate = feedrate_mm_s;
 
     #if HOTENDS > 1
@@ -262,9 +293,10 @@ void save_job_recovery_info() {
     // Elapsed print job time
     job_recovery_info.print_job_elapsed = print_job_timer.duration();
 
-    // SD file position
-    card.getAbsFilename(job_recovery_info.sd_filename);
-    job_recovery_info.sdpos = card.getIndex();
+    // SD file and position
+    if(job_recovery_info.sd_filename[0] == 0)
+      card.getAbsFilename(job_recovery_info.sd_filename);
+    job_recovery_info.sdpos = card.getIndex();    
 
     #if ENABLED(DEBUG_POWER_LOSS_RECOVERY)
       SERIAL_PROTOCOLLNPGM("Saving...");

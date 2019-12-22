@@ -33,7 +33,8 @@
 
 #define SAVE_INFO_INTERVAL_MS 0
 //#define SAVE_EACH_CMD_MODE
-//#define DEBUG_POWER_LOSS_RECOVERY
+//#define SAVE_EACH_Z_HEIGHT
+#define DEBUG_POWER_LOSS_RECOVERY
 
 typedef struct {
   uint8_t valid_head;
@@ -94,6 +95,6 @@ extern char job_recovery_commands[BUFSIZE + APPEND_CMD_COUNT][MAX_CMD_SIZE];
 extern uint8_t job_recovery_commands_count;
 
 void check_print_job_recovery();
-void save_job_recovery_info();
+void save_job_recovery_info(const bool force);
 
 #endif // _POWER_LOSS_RECOVERY_H_

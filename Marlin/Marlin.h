@@ -281,6 +281,10 @@ extern volatile bool wait_for_heatup;
 
 extern float current_position[XYZE], destination[XYZE];
 
+#if ENABLED(ADVANCED_PAUSE_FEATURE)
+  extern float resume_position[XYZE];
+#endif
+
 /**
  * Workspace offsets
  */

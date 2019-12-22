@@ -245,6 +245,7 @@
 #define MSG_PREPARE                         _UxGT("Prepara")
 #define MSG_TUNE                            _UxGT("Regola")
 #define MSG_PAUSE_PRINT                     _UxGT("Pausa")
+#define MSG_PAUSE_AND_SAVE_PRINT            _UxGT("Pausa e salva")
 #define MSG_RESUME_PRINT                    _UxGT("Riprendi stampa")
 #define MSG_STOP_PRINT                      _UxGT("Arresta stampa")
 #define MSG_CARD_MENU                       _UxGT("Stampa da SD")

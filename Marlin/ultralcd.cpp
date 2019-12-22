@@ -872,7 +872,8 @@ void lcd_quick_feedback(const bool clear_buttons) {
       lcd_return_to_status();
 
       // Turn leveling off and home
-      enqueue_and_echo_commands_P(PSTR("M420 S0\nG28 R0"
+      enqueue_and_echo_commands_P(PSTR("M420 S0"));
+      enqueue_and_echo_commands_P(PSTR("G28 R0"
         #if ENABLED(MARLIN_DEV_MODE)
           " S"
         #elif !IS_KINEMATIC
@@ -923,6 +924,7 @@ void lcd_quick_feedback(const bool clear_buttons) {
     static void lcd_power_loss_recovery_cancel() {
       card.removeJobRecoveryFile();
       card.autostart_index = 0;
+      memset(&job_recovery_info, 0, sizeof(job_recovery_info));
       lcd_return_to_status();
     }
 
@@ -1148,7 +1150,13 @@ void lcd_quick_feedback(const bool clear_buttons) {
       if (card.cardOK) {
         if (card.isFileOpen()) {
           if (card.sdprinting)
-            MENU_ITEM(function, MSG_PAUSE_PRINT, lcd_sdcard_pause);
+            MENU_ITEM(function, 
+            #if ENABLED(POWER_LOSS_RECOVERY)
+              MSG_PAUSE_AND_SAVE_PRINT,
+            #else
+              MSG_PAUSE_PRINT,               
+            #endif
+              lcd_sdcard_pause);
           else
             MENU_ITEM(function, MSG_RESUME_PRINT, lcd_sdcard_resume);
           MENU_ITEM(function, MSG_STOP_PRINT, lcd_sdcard_stop);
