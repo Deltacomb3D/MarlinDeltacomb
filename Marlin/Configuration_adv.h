@@ -394,6 +394,9 @@
 // Enable this if X or Y can't home without homing the other axis first.
 //#define CODEPENDENT_XY_HOMING
 
+// job abort and homing routine
+#define JOB_ABORT_ROUNTINE "G91\nG1 E-4\nG28\nM524"
+
 // @section machine
 
 #define AXIS_RELATIVE_MODES {false, false, false, false}
