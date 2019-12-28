@@ -269,13 +269,13 @@ static void lcd_set_custom_characters(
 
   // CHARSET_INFO
   const static PROGMEM byte bedTemp[8] = {
+    B01001,
+    B10010,
+    B01001,
+    B10010,
     B00000,
+    B01110,
     B11111,
-    B10101,
-    B10001,
-    B10101,
-    B11111,
-    B00000,
     B00000
   };
 
@@ -290,15 +290,26 @@ static void lcd_set_custom_characters(
     B00000
   };
 
-  const static PROGMEM byte thermometer[8] = {
+/*  const static PROGMEM byte thermometer[8] = {
     B00100,
     B01010,
+    B01010,    
+    B01110,
+    B11111,
+    B11111,
+    B01110,
+    B00000,
+  };*/
+
+  const static PROGMEM byte thermometer[8] = {
+    B11111,
+    B01110,
+    B11111,    
+    B01110,
+    B11111,
     B01010,
-    B01010,
-    B01010,
-    B10001,
-    B10001,
-    B01110
+    B00100,
+    B00000,
   };
 
   const static PROGMEM byte uplevel[8] = {
@@ -313,23 +324,23 @@ static void lcd_set_custom_characters(
   };
 
   const static PROGMEM byte feedrate[8] = {
-    B11100,
-    B10000,
+    B00111,
+    B01111,
     B11000,
-    B10111,
-    B00101,
-    B00110,
-    B00101,
+    B10000,
+    B00100,
+    B00010,
+    B00001,
     B00000
   };
 
   const static PROGMEM byte clock[8] = {
     B00000,
     B01110,
-    B10011,
     B10101,
+    B10111,
     B10001,
-    B01110,
+    B01110,    
     B00000,
     B00000
   };
@@ -373,12 +384,12 @@ static void lcd_set_custom_characters(
     // CHARSET_MENU
     const static PROGMEM byte refresh[8] = {
       B00000,
-      B00110,
+      B01110,
       B11001,
       B11000,
       B00011,
       B10011,
-      B01100,
+      B01110,
       B00000,
     };
     const static PROGMEM byte folder[8] = {
@@ -531,10 +542,10 @@ void lcd_printPGM_utf(const char *str, uint8_t n=LCD_WIDTH) {
   }
 
   static void logo_lines(const char* const extra) {
-    int16_t indent = (LCD_WIDTH - 8 - utf8_strlen_P(extra)) / 2;
-    lcd.setCursor(indent, 0); lcd.print('\x00'); lcd_printPGM(PSTR( "------" ));  lcd.write('\x01');
-    lcd.setCursor(indent, 1);                    lcd_printPGM(PSTR("|Marlin|"));  lcd_printPGM(extra);
-    lcd.setCursor(indent, 2); lcd.write('\x02'); lcd_printPGM(PSTR( "------" ));  lcd.write('\x03');
+    int16_t indent = (LCD_WIDTH - 14 - utf8_strlen_P(extra)) / 2;
+    lcd.setCursor(indent, 0); lcd.print('\x00'); lcd_printPGM(PSTR( "------------" ));  lcd.write('\x01');
+    lcd.setCursor(indent, 1);                    lcd_printPGM(PSTR("|Deltacomb 3D|"));  lcd_printPGM(extra);
+    lcd.setCursor(indent, 2); lcd.write('\x02'); lcd_printPGM(PSTR( "------------" ));  lcd.write('\x03');
   }
 
   void lcd_bootscreen() {
@@ -1134,9 +1145,9 @@ static void lcd_implementation_status_screen() {
   #endif // SDSUPPORT
 
   #define lcd_implementation_drawmenu_back(sel, row, pstr, dummy) lcd_implementation_drawmenu_generic(sel, row, pstr, LCD_UPLEVEL_CHAR, LCD_UPLEVEL_CHAR)
-  #define lcd_implementation_drawmenu_submenu(sel, row, pstr, data) lcd_implementation_drawmenu_generic(sel, row, pstr, '>', LCD_STR_ARROW_RIGHT[0])
-  #define lcd_implementation_drawmenu_gcode(sel, row, pstr, gcode) lcd_implementation_drawmenu_generic(sel, row, pstr, '>', ' ')
-  #define lcd_implementation_drawmenu_function(sel, row, pstr, data) lcd_implementation_drawmenu_generic(sel, row, pstr, '>', ' ')
+  #define lcd_implementation_drawmenu_submenu(sel, row, pstr, data) lcd_implementation_drawmenu_generic(sel, row, pstr, LCD_STR_ARROW_RIGHT, LCD_STR_ARROW_RIGHT)
+  #define lcd_implementation_drawmenu_gcode(sel, row, pstr, gcode) lcd_implementation_drawmenu_generic(sel, row, pstr, LCD_STR_ARROW_RIGHT, ' ')
+  #define lcd_implementation_drawmenu_function(sel, row, pstr, data) lcd_implementation_drawmenu_generic(sel, row, pstr, LCD_STR_ARROW_RIGHT, ' ')
 
   #if ENABLED(LCD_HAS_SLOW_BUTTONS)
 
