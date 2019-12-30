@@ -172,6 +172,8 @@ uint16_t max_display_update_time = 0;
   ////////////////////////////////////////////
 
   void lcd_main_menu();
+  void lcd_print_menu();
+  void lcd_maintenance_menu();
   void lcd_tune_menu();
   void lcd_prepare_menu();
   void lcd_move_menu();
@@ -870,6 +872,7 @@ void lcd_quick_feedback(const bool clear_buttons) {
   #if ENABLED(POWER_LOSS_RECOVERY)
 
     static void lcd_power_loss_recovery_resume() {
+      check_print_job_recovery();
       char cmd[20];
 
       // Return to status now
@@ -925,22 +928,6 @@ void lcd_quick_feedback(const bool clear_buttons) {
       job_recovery_phase = JOB_RECOVERY_YES;
     }
 
-    static void lcd_power_loss_recovery_cancel() {
-      card.removeJobRecoveryFile();
-      card.autostart_index = 0;
-      memset(&job_recovery_info, 0, sizeof(job_recovery_info));
-      lcd_return_to_status();
-    }
-
-    static void lcd_job_recovery_menu() {
-      defer_return_to_status = true;
-      START_MENU();
-      STATIC_ITEM(MSG_POWER_LOSS_RECOVERY);
-      MENU_ITEM(function, MSG_RESUME_PRINT, lcd_power_loss_recovery_resume);
-      MENU_ITEM(function, MSG_STOP_PRINT, lcd_power_loss_recovery_cancel);
-      END_MENU();
-    }
-
   #endif // POWER_LOSS_RECOVERY
 
   #if ENABLED(MENU_ITEM_CASE_LIGHT)
@@ -954,7 +941,7 @@ void lcd_quick_feedback(const bool clear_buttons) {
       //
       // ^ Main
       //
-      MENU_BACK(MSG_MAIN);
+      MENU_BACK(MSG_BACK);
       MENU_ITEM_EDIT_CALLBACK(int8, MSG_CASE_LIGHT_BRIGHTNESS, &case_light_brightness, 0, 255, update_case_light, true);
       MENU_ITEM_EDIT_CALLBACK(bool, MSG_CASE_LIGHT, (bool*)&case_light_on, update_case_light);
       END_MENU();
@@ -994,7 +981,7 @@ void lcd_quick_feedback(const bool clear_buttons) {
 
     void bltouch_menu() {
       START_MENU();
-      MENU_BACK(MSG_MAIN);
+      MENU_BACK(MSG_BACK);
       MENU_ITEM(function, MSG_BLTOUCH_RESET, _bltouch_reset);
       MENU_ITEM(function, MSG_BLTOUCH_SELFTEST, _bltouch_selftest);
       MENU_ITEM(function, MSG_BLTOUCH_DEPLOY, _bltouch_deploy);
@@ -1043,7 +1030,7 @@ void lcd_quick_feedback(const bool clear_buttons) {
     void lcd_debug_menu() {
       START_MENU();
 
-      MENU_BACK(MSG_MAIN); // ^ Main
+      MENU_BACK(MSG_BACK); // ^ Main
 
       #if ENABLED(LCD_PROGRESS_BAR_TEST)
         MENU_ITEM(submenu, MSG_PROGRESS_BAR_TEST, _progress_bar_test);
@@ -1125,52 +1112,51 @@ void lcd_quick_feedback(const bool clear_buttons) {
       MENU_ITEM(submenu, MSG_USER_MENU, _lcd_user_menu);
     #endif
 
-    //
-    // Debug Menu when certain options are enabled
-    //
-    #if HAS_DEBUG_MENU
-      MENU_ITEM(submenu, MSG_DEBUG_MENU, lcd_debug_menu);
-    #endif
-
-    //
-    // Set Case light on/off/brightness
-    //
-    #if ENABLED(MENU_ITEM_CASE_LIGHT)
-      if (USEABLE_HARDWARE_PWM(CASE_LIGHT_PIN)) {
-        MENU_ITEM(submenu, MSG_CASE_LIGHT, case_light_menu);
+    #if ENABLED(SDSUPPORT)
+      if (card.isFileOpen()) {
+        if (card.sdprinting)
+          MENU_ITEM(function, 
+          #if ENABLED(POWER_LOSS_RECOVERY)
+            MSG_PAUSE_AND_SAVE_PRINT,
+          #else
+            MSG_PAUSE_PRINT,               
+          #endif
+            lcd_sdcard_pause);
+        else
+          MENU_ITEM(function, MSG_RESUME_PRINT, lcd_sdcard_resume);
+        MENU_ITEM(function, MSG_STOP_PRINT, lcd_sdcard_stop);
       }
-      else
-        MENU_ITEM_EDIT_CALLBACK(bool, MSG_CASE_LIGHT, (bool*)&case_light_on, update_case_light);
-    #endif
-
+      else {          
+        MENU_ITEM(submenu, MSG_PRINT_MENU, lcd_print_menu);
+      }
+    #endif // SDSUPPORT
+    
     if (planner.movesplanned() || IS_SD_PRINTING())
       MENU_ITEM(submenu, MSG_TUNE, lcd_tune_menu);
     else
-      MENU_ITEM(submenu, MSG_PREPARE, lcd_prepare_menu);
+      MENU_ITEM(submenu, MSG_COMMON_OPERATION, lcd_prepare_menu);
 
-    MENU_ITEM(submenu, MSG_CONTROL, lcd_control_menu);
+    MENU_ITEM(submenu, MSG_MAINTENANCE, lcd_maintenance_menu);
+
+    END_MENU();
+  }
+
+  /**
+   *
+   * "Print" menu
+   *
+   */
+
+  void lcd_print_menu() {
+    START_MENU();
+    MENU_BACK(MSG_MAIN);
 
     #if ENABLED(SDSUPPORT)
       if (card.cardOK) {
-        if (card.isFileOpen()) {
-          if (card.sdprinting)
-            MENU_ITEM(function, 
-            #if ENABLED(POWER_LOSS_RECOVERY)
-              MSG_PAUSE_AND_SAVE_PRINT,
-            #else
-              MSG_PAUSE_PRINT,               
-            #endif
-              lcd_sdcard_pause);
-          else
-            MENU_ITEM(function, MSG_RESUME_PRINT, lcd_sdcard_resume);
-          MENU_ITEM(function, MSG_STOP_PRINT, lcd_sdcard_stop);
-        }
-        else {
-          MENU_ITEM(submenu, MSG_CARD_MENU, lcd_sdcard_menu);
-          #if !PIN_EXISTS(SD_DETECT)
-            MENU_ITEM(gcode, MSG_CNG_SDCARD, PSTR("M21"));  // SD-card changed by user
-          #endif
-        }
+        MENU_ITEM(submenu, MSG_CARD_MENU, lcd_sdcard_menu);
+        #if !PIN_EXISTS(SD_DETECT)
+          MENU_ITEM(gcode, MSG_CNG_SDCARD, PSTR("M21"));  // SD-card changed by user
+        #endif
       }
       else {
         MENU_ITEM(submenu, MSG_NO_CARD, lcd_sdcard_menu);
@@ -1180,12 +1166,44 @@ void lcd_quick_feedback(const bool clear_buttons) {
       }
     #endif // SDSUPPORT
 
-    #if ENABLED(LCD_INFO_MENU)
-      MENU_ITEM(submenu, MSG_INFO_MENU, lcd_info_menu);
+    #if ENABLED(POWER_LOSS_RECOVERY)
+      if (card.cardOK) {
+        if(card.jobRecoverFileExists()) {
+          card.openJobRecoveryFile(true);
+          card.loadJobRecoveryInfo();
+          card.closeJobRecoveryFile();
+          if (job_recovery_info.valid_head && job_recovery_info.valid_head == job_recovery_info.valid_foot) {
+            MENU_ITEM(function, MSG_RESUME_PRINT, lcd_power_loss_recovery_resume);
+          }
+        }
+      }
     #endif
 
-    #if ENABLED(LED_CONTROL_MENU)
-      MENU_ITEM(submenu, MSG_LED_CONTROL, lcd_led_menu);
+    END_MENU();
+  }
+
+  /**
+   *
+   * "Maintenance" menu
+   *
+   */
+
+  void lcd_maintenance_menu() {
+    START_MENU();
+    MENU_BACK(MSG_MAIN);
+
+    //
+    // Delta Calibration
+    //
+    #if ENABLED(DELTA_CALIBRATION_MENU) || ENABLED(DELTA_AUTO_CALIBRATION)
+      if (!planner.movesplanned() || !IS_SD_PRINTING())
+        MENU_ITEM(submenu, MSG_DELTA_CALIBRATE, lcd_delta_calibrate_menu);      
+    #endif
+
+    MENU_ITEM(submenu, MSG_CONTROL, lcd_control_menu);
+
+    #if ENABLED(LCD_INFO_MENU)
+      MENU_ITEM(submenu, MSG_INFO_MENU, lcd_info_menu);
     #endif
 
     END_MENU();
@@ -1574,7 +1592,7 @@ void lcd_quick_feedback(const bool clear_buttons) {
     void lcd_dac_menu() {
       dac_driver_getValues();
       START_MENU();
-      MENU_BACK(MSG_CONTROL);
+      MENU_BACK(MSG_BACK);
       MENU_ITEM_EDIT_CALLBACK(int8, MSG_X " " MSG_DAC_PERCENT, &driverPercent[X_AXIS], 0, 100, dac_driver_commit);
       MENU_ITEM_EDIT_CALLBACK(int8, MSG_Y " " MSG_DAC_PERCENT, &driverPercent[Y_AXIS], 0, 100, dac_driver_commit);
       MENU_ITEM_EDIT_CALLBACK(int8, MSG_Z " " MSG_DAC_PERCENT, &driverPercent[Z_AXIS], 0, 100, dac_driver_commit);
@@ -1589,7 +1607,7 @@ void lcd_quick_feedback(const bool clear_buttons) {
 
     void lcd_pwm_menu() {
       START_MENU();
-      MENU_BACK(MSG_CONTROL);
+      MENU_BACK(MSG_BACK);
       #if PIN_EXISTS(MOTOR_CURRENT_PWM_XY)
         MENU_ITEM_EDIT_CALLBACK(long5, MSG_X MSG_Y, &stepper.motor_current_setting[0], 100, 2000, Stepper::refresh_motor_power);
       #endif
@@ -1721,7 +1739,7 @@ void lcd_quick_feedback(const bool clear_buttons) {
 
     void lcd_preheat_m1_menu() {
       START_MENU();
-      MENU_BACK(MSG_PREPARE);
+      MENU_BACK(MSG_BACK);
       #if HOTENDS == 1
         #if HAS_HEATED_BED
           MENU_ITEM(function, MSG_PREHEAT_1, lcd_preheat_m1_e0);
@@ -1773,7 +1791,7 @@ void lcd_quick_feedback(const bool clear_buttons) {
 
     void lcd_preheat_m2_menu() {
       START_MENU();
-      MENU_BACK(MSG_PREPARE);
+      MENU_BACK(MSG_BACK);
       #if HOTENDS == 1
         #if HAS_HEATED_BED
           MENU_ITEM(function, MSG_PREHEAT_2, lcd_preheat_m2_e0);
@@ -2593,7 +2611,7 @@ void lcd_quick_feedback(const bool clear_buttons) {
 
     void _lcd_ubl_level_bed() {
       START_MENU();
-      MENU_BACK(MSG_PREPARE);
+      MENU_BACK(MSG_BACK);
       MENU_ITEM(gcode, MSG_UBL_ACTIVATE_MESH, PSTR("G29 A"));
       MENU_ITEM(gcode, MSG_UBL_DEACTIVATE_MESH, PSTR("G29 D"));
       MENU_ITEM(submenu, MSG_UBL_STEP_BY_STEP_MENU, _lcd_ubl_step_by_step);
@@ -2633,7 +2651,7 @@ void lcd_quick_feedback(const bool clear_buttons) {
      */
     void lcd_bed_leveling() {
       START_MENU();
-      MENU_BACK(MSG_PREPARE);
+      MENU_BACK(MSG_BACK);
 
       const bool is_homed = all_axes_known();
 
@@ -2691,7 +2709,7 @@ void lcd_quick_feedback(const bool clear_buttons) {
 
   /**
    *
-   * "Prepare" submenu
+   * "Prepare" submenu (Common Operations)
    *
    */
 
@@ -2841,13 +2859,6 @@ void lcd_quick_feedback(const bool clear_buttons) {
       MENU_ITEM(function, MSG_AUTOSTART, lcd_autostart_sd);
     #endif
 
-    //
-    // Delta Calibration
-    //
-    #if ENABLED(DELTA_CALIBRATION_MENU) || ENABLED(DELTA_AUTO_CALIBRATION)
-      MENU_ITEM(submenu, MSG_DELTA_CALIBRATE, lcd_delta_calibrate_menu);
-    #endif
-
     END_MENU();
   }
 
@@ -2915,7 +2926,7 @@ void lcd_quick_feedback(const bool clear_buttons) {
 
     void lcd_delta_settings() {
       START_MENU();
-      MENU_BACK(MSG_DELTA_CALIBRATE);
+      MENU_BACK(MSG_BACK);
       MENU_ITEM_EDIT_CALLBACK(float52sign, MSG_DELTA_HEIGHT, &delta_height, delta_height - 10, delta_height + 10, _recalc_delta_settings);
       MENU_ITEM_EDIT_CALLBACK(float43, "Ex", &delta_endstop_adj[A_AXIS], -5, 5, _recalc_delta_settings);
       MENU_ITEM_EDIT_CALLBACK(float43, "Ey", &delta_endstop_adj[B_AXIS], -5, 5, _recalc_delta_settings);
@@ -2930,7 +2941,7 @@ void lcd_quick_feedback(const bool clear_buttons) {
 
     void lcd_delta_calibrate_menu() {
       START_MENU();
-      MENU_BACK(MSG_MAIN);
+      MENU_BACK(MSG_BACK);
       #if ENABLED(DELTA_AUTO_CALIBRATION)
         MENU_ITEM(gcode, MSG_DELTA_AUTO_CALIBRATE, PSTR("G33"));
         #if ENABLED(EEPROM_SETTINGS)
@@ -3254,7 +3265,7 @@ void lcd_quick_feedback(const bool clear_buttons) {
 
   void lcd_move_menu() {
     START_MENU();
-    MENU_BACK(MSG_PREPARE);
+    MENU_BACK(MSG_BACK);
 
     #if HAS_SOFTWARE_ENDSTOPS && ENABLED(SOFT_ENDSTOPS_MENU_ITEM)
       MENU_ITEM_EDIT(bool, MSG_LCD_SOFT_ENDSTOPS, &soft_endstops_enabled);
@@ -3365,7 +3376,7 @@ void lcd_quick_feedback(const bool clear_buttons) {
 
     static void lcd_init_eeprom_confirm() {
       START_MENU();
-      MENU_BACK(MSG_CONTROL);
+      MENU_BACK(MSG_BACK);
       MENU_ITEM(function, MSG_INIT_EEPROM, lcd_init_eeprom);
       END_MENU();
     }
@@ -3374,16 +3385,14 @@ void lcd_quick_feedback(const bool clear_buttons) {
 
   void lcd_control_menu() {
     START_MENU();
-    MENU_BACK(MSG_MAIN);
+    MENU_BACK(MSG_BACK);
     MENU_ITEM(submenu, MSG_TEMPERATURE, lcd_control_temperature_menu);
     MENU_ITEM(submenu, MSG_MOTION, lcd_control_motion_menu);
-
     #if DISABLED(NO_VOLUMETRICS) || ENABLED(ADVANCED_PAUSE_FEATURE)
       MENU_ITEM(submenu, MSG_FILAMENT, lcd_control_filament_menu);
     #elif ENABLED(LIN_ADVANCE)
       MENU_ITEM_EDIT(float52, MSG_ADVANCE_K, &planner.extruder_advance_K, 0, 999);
     #endif
-
     #if HAS_LCD_CONTRAST
       MENU_ITEM_EDIT_CALLBACK(int3, MSG_CONTRAST, &lcd_contrast, LCD_CONTRAST_MIN, LCD_CONTRAST_MAX, lcd_callback_set_contrast, true);
     #endif
@@ -3396,22 +3405,30 @@ void lcd_quick_feedback(const bool clear_buttons) {
     #if HAS_MOTOR_CURRENT_PWM
       MENU_ITEM(submenu, MSG_DRIVE_STRENGTH, lcd_pwm_menu);
     #endif
-
     #if ENABLED(BLTOUCH)
       MENU_ITEM(submenu, MSG_BLTOUCH, bltouch_menu);
     #endif
-
+    #if ENABLED(MENU_ITEM_CASE_LIGHT)
+      if (USEABLE_HARDWARE_PWM(CASE_LIGHT_PIN)) {
+        MENU_ITEM(submenu, MSG_CASE_LIGHT, case_light_menu);
+      }
+      else
+        MENU_ITEM_EDIT_CALLBACK(bool, MSG_CASE_LIGHT, (bool*)&case_light_on, update_case_light);
+    #endif
+    #if ENABLED(LED_CONTROL_MENU)
+      MENU_ITEM(submenu, MSG_LED_CONTROL, lcd_led_menu);
+    #endif
     #if ENABLED(EEPROM_SETTINGS)
       MENU_ITEM(function, MSG_STORE_EEPROM, lcd_store_settings);
       MENU_ITEM(function, MSG_LOAD_EEPROM, lcd_load_settings);
     #endif
-
     MENU_ITEM(function, MSG_RESTORE_FAILSAFE, lcd_factory_settings);
-
     #if ENABLED(EEPROM_SETTINGS) && DISABLED(SLIM_LCD_MENUS)
       MENU_ITEM(submenu, MSG_INIT_EEPROM, lcd_init_eeprom_confirm);
     #endif
-
+    #if HAS_DEBUG_MENU
+      MENU_ITEM(submenu, MSG_DEBUG_MENU, lcd_debug_menu);
+    #endif
     END_MENU();
   }
 
@@ -3506,7 +3523,7 @@ void lcd_quick_feedback(const bool clear_buttons) {
     //
     // ^ Control
     //
-    MENU_BACK(MSG_CONTROL);
+    MENU_BACK(MSG_BACK);
 
     //
     // Nozzle:
@@ -3855,7 +3872,7 @@ void lcd_quick_feedback(const bool clear_buttons) {
 
   void lcd_control_motion_menu() {
     START_MENU();
-    MENU_BACK(MSG_CONTROL);
+    MENU_BACK(MSG_BACK);
 
     #if ENABLED(BABYSTEP_ZPROBE_OFFSET)
       MENU_ITEM(submenu, MSG_ZPROBE_ZOFFSET, lcd_babystep_zoffset);
@@ -3895,7 +3912,7 @@ void lcd_quick_feedback(const bool clear_buttons) {
      */
     void lcd_control_filament_menu() {
       START_MENU();
-      MENU_BACK(MSG_CONTROL);
+      MENU_BACK(MSG_BACK);
 
       #if ENABLED(LIN_ADVANCE)
         MENU_ITEM_EDIT(float52, MSG_ADVANCE_K, &planner.extruder_advance_K, 0, 999);
@@ -3981,7 +3998,7 @@ void lcd_quick_feedback(const bool clear_buttons) {
 
     void lcd_control_retract_menu() {
       START_MENU();
-      MENU_BACK(MSG_CONTROL);
+      MENU_BACK(MSG_BACK);
       MENU_ITEM_EDIT_CALLBACK(bool, MSG_AUTORETRACT, &fwretract.autoretract_enabled, fwretract.refresh_autoretract);
       MENU_ITEM_EDIT(float52sign, MSG_CONTROL_RETRACT, &fwretract.retract_length, 0, 100);
       #if EXTRUDERS > 1
@@ -4056,7 +4073,7 @@ void lcd_quick_feedback(const bool clear_buttons) {
       const uint16_t fileCnt = card.get_num_Files();
 
       START_MENU();
-      MENU_BACK(MSG_MAIN);
+      MENU_BACK(MSG_BACK);
       card.getWorkDirName();
       if (card.filename[0] == '/') {
         #if !PIN_EXISTS(SD_DETECT)
@@ -4249,7 +4266,7 @@ void lcd_quick_feedback(const bool clear_buttons) {
      */
     void lcd_info_menu() {
       START_MENU();
-      MENU_BACK(MSG_MAIN);
+      MENU_BACK(MSG_BACK);
       MENU_ITEM(submenu, MSG_INFO_PRINTER_MENU, lcd_info_printer_menu);        // Printer Info >
       MENU_ITEM(submenu, MSG_INFO_BOARD_MENU, lcd_info_board_menu);            // Board Info >
       MENU_ITEM(submenu, MSG_INFO_THERMISTOR_MENU, lcd_info_thermistors_menu); // Thermistors >
@@ -4305,7 +4322,7 @@ void lcd_quick_feedback(const bool clear_buttons) {
 
     void lcd_led_menu() {
       START_MENU();
-      MENU_BACK(MSG_MAIN);
+      MENU_BACK(MSG_BACK);
       bool led_on = leds.lights_on;
       MENU_ITEM_EDIT_CALLBACK(bool, MSG_LEDS, &led_on, leds.toggle);
       MENU_ITEM(function, MSG_SET_LEDS_DEFAULT, leds.set_default);
@@ -4411,7 +4428,7 @@ void lcd_quick_feedback(const bool clear_buttons) {
     #if E_STEPPERS > 1 || ENABLED(FILAMENT_LOAD_UNLOAD_GCODES)
       void lcd_change_filament_menu() {
         START_MENU();
-        MENU_BACK(MSG_PREPARE);
+        MENU_BACK(MSG_BACK);
 
         // Change filament
         #if E_STEPPERS == 1
@@ -5230,13 +5247,6 @@ void lcd_update() {
     }
 
   #endif // SDSUPPORT && SD_DETECT_PIN
-
-  #if ENABLED(POWER_LOSS_RECOVERY)
-    if (job_recovery_commands_count && job_recovery_phase == JOB_RECOVERY_IDLE) {
-      lcd_goto_screen(lcd_job_recovery_menu);
-      job_recovery_phase = JOB_RECOVERY_MAYBE; // Waiting for a response
-    }
-  #endif
 
   const millis_t ms = millis();
   if (ELAPSED(ms, next_lcd_update_ms)

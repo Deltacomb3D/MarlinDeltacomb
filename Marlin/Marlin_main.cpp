@@ -15443,10 +15443,6 @@ void setup() {
     #endif
   #endif
 
-  #if ENABLED(POWER_LOSS_RECOVERY)
-    check_print_job_recovery();
-  #endif
-
   #if ENABLED(USE_WATCHDOG)
     watchdog_init();
   #endif

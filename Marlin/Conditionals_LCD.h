@@ -343,6 +343,7 @@
   #define LCD_FEEDRATE_CHAR    0x06
   #define LCD_CLOCK_CHAR       0x07
   #define LCD_STR_ARROW_RIGHT  0x7E  /* from the default character set */
+  #define LCD_STR_GT           0x3E  /* from the default character set */
 #endif
 
 /**

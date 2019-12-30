@@ -1144,10 +1144,10 @@ static void lcd_implementation_status_screen() {
 
   #endif // SDSUPPORT
 
-  #define lcd_implementation_drawmenu_back(sel, row, pstr, dummy) lcd_implementation_drawmenu_generic(sel, row, pstr, LCD_UPLEVEL_CHAR, LCD_UPLEVEL_CHAR)
-  #define lcd_implementation_drawmenu_submenu(sel, row, pstr, data) lcd_implementation_drawmenu_generic(sel, row, pstr, LCD_STR_ARROW_RIGHT, LCD_STR_ARROW_RIGHT)
-  #define lcd_implementation_drawmenu_gcode(sel, row, pstr, gcode) lcd_implementation_drawmenu_generic(sel, row, pstr, LCD_STR_ARROW_RIGHT, ' ')
-  #define lcd_implementation_drawmenu_function(sel, row, pstr, data) lcd_implementation_drawmenu_generic(sel, row, pstr, LCD_STR_ARROW_RIGHT, ' ')
+  #define lcd_implementation_drawmenu_back(sel, row, pstr, dummy) lcd_implementation_drawmenu_generic(sel, row, pstr, LCD_STR_GT, LCD_UPLEVEL_CHAR)
+  #define lcd_implementation_drawmenu_submenu(sel, row, pstr, data) lcd_implementation_drawmenu_generic(sel, row, pstr, LCD_STR_GT, LCD_STR_ARROW_RIGHT)
+  #define lcd_implementation_drawmenu_gcode(sel, row, pstr, gcode) lcd_implementation_drawmenu_generic(sel, row, pstr, LCD_STR_GT, ' ')
+  #define lcd_implementation_drawmenu_function(sel, row, pstr, data) lcd_implementation_drawmenu_generic(sel, row, pstr, LCD_STR_GT, ' ')
 
   #if ENABLED(LCD_HAS_SLOW_BUTTONS)
 
