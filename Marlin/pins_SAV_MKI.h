@@ -167,7 +167,7 @@
   #define BTN_EN2          EXT_AUX_A0_IO
   #define BTN_ENC          EXT_AUX_PWM_D24
 
-  #define KILL_PIN         EXT_AUX_A2_IO
+  #define PAUSE_PIN        EXT_AUX_A2_IO
   #define HOME_PIN         EXT_AUX_A4_IO
 
 #else // Use the expansion header for spindle control

@@ -81,7 +81,7 @@
     #define BTN_ENC        24
     #define LCD_BACKLIGHT_PIN  6
     #if ENABLED(SILVER_GATE_GLCD_CONTROLLER)
-      #define KILL_PIN     21
+      #define PAUSE_PIN    21
       #define HOME_PIN     28
     #endif
   #endif

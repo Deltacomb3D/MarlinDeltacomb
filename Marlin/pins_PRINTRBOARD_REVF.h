@@ -236,7 +236,7 @@
     #define DOGLCD_CS       5   //       30               D5                EXP2-06             EXP1-05
     #define BTN_ENC         6   //       31               D6                EXP2-07             EXP1-09
     #define BEEPER_PIN      7   //       32               D7                EXP2-08             EXP1-10
-    #define KILL_PIN        8   //       33               E0                EXP2-10             EXP2-03
+    #define PAUSE_PIN       8   //       33               E0                EXP2-10             EXP2-03
     #define BTN_EN1        10   //       35               C0                EXP2-12             EXP2-06
     #define BTN_EN2        12   //       37               C2                EXP2-14             EXP2-08
     //#define LCD_BACKLIGHT_PIN 43   //    56               F5                EXP1-12     Not Implemented

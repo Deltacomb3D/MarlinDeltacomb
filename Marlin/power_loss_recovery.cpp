@@ -255,7 +255,7 @@ void save_job_recovery_info(const bool force) {
       COPY(job_recovery_info.current_position, current_position);
     else {
       COPY(job_recovery_info.current_position, resume_position);
-      job_recovery_info.current_position[3] = resume_position[3] - PAUSE_PARK_RETRACT_LENGTH - 2; 
+      job_recovery_info.current_position[3] = resume_position[3] - PAUSE_PARK_RETRACT_LENGTH - 4; 
     }
 
     job_recovery_info.feedrate = feedrate_mm_s;

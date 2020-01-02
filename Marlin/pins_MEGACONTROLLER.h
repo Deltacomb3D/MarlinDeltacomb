@@ -142,7 +142,7 @@
   #define DOGLCD_CS        45
   #define LCD_BACKLIGHT_PIN 44   // backlight LED on PA3
 
-  #define KILL_PIN         12
+  #define PAUSE_PIN        12
   // GLCD features
   //#define LCD_CONTRAST 190
   // Uncomment screen orientation

@@ -51,6 +51,8 @@
   void lcd_reset_status();
   void lcd_status_printf_P(const uint8_t level, const char * const fmt, ...);
   void lcd_kill_screen();
+  void lcd_sdcard_pause();
+  void lcd_sdcard_resume();
   void kill_screen(const char* lcd_msg);
 
   extern uint8_t lcdDrawUpdate;

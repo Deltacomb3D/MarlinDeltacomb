@@ -102,7 +102,7 @@
 #define EXT_2               5   // additional PWM pin 2 at JP1 connector
 #define EXT_3               2   // additional PWM pin 3 at JP1 connector
 #define PS_ON_PIN          45
-#define KILL_PIN           46
+#define PAUSE_PIN          46
 
 #ifndef FILWIDTH_PIN
   #define FILWIDTH_PIN     11   // shared with TEMP_3 analog input

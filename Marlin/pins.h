@@ -474,8 +474,8 @@
 #ifndef PS_ON_PIN
   #define PS_ON_PIN -1
 #endif
-#ifndef KILL_PIN
-  #define KILL_PIN -1
+#ifndef PAUSE_PIN
+  #define PAUSE_PIN -1
 #endif
 #ifndef SUICIDE_PIN
   #define SUICIDE_PIN -1

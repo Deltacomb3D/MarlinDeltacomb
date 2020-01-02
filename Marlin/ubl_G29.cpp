@@ -1117,9 +1117,9 @@
     }
     SERIAL_EOL();
 
-    #if HAS_KILL
-      SERIAL_PROTOCOLPAIR("Kill pin on :", KILL_PIN);
-      SERIAL_PROTOCOLLNPAIR("  state:", READ(KILL_PIN));
+    #if HAS_PAUSE
+      SERIAL_PROTOCOLPAIR("Pause pin on :", PAUSE_PIN);
+      SERIAL_PROTOCOLLNPAIR("  state:", READ(PAUSE_PIN));
     #endif
     SERIAL_EOL();
     safe_delay(50);

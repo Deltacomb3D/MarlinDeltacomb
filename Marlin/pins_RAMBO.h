@@ -164,7 +164,7 @@
 //
 #if ENABLED(ULTRA_LCD)
 
-  #define KILL_PIN         80
+  #define PAUSE_PIN        80
 
   #if ENABLED(NEWPANEL)
 

@@ -756,10 +756,6 @@ void lcd_reset_status() {
   const char *msg;
   if (print_job_timer.isPaused())
     msg = paused;
-  #if ENABLED(SDSUPPORT)
-    else if (card.sdprinting)
-      return lcd_setstatus(card.longest_filename(), true);
-  #endif
   else if (print_job_timer.isRunning())
     msg = printing;
   else
@@ -838,12 +834,13 @@ void lcd_quick_feedback(const bool clear_buttons) {
   #if ENABLED(SDSUPPORT)
 
     void lcd_sdcard_pause() {
-      card.pauseSDPrint();
-      print_job_timer.pause();
+      card.pauseSDPrint();      
       #if ENABLED(PARK_HEAD_ON_PAUSE)
         enqueue_and_echo_commands_P(PSTR("M125"));
+      #else
+        print_job_timer.pause();
+        lcd_reset_status();
       #endif
-      lcd_reset_status();
     }
 
     void lcd_sdcard_resume() {
@@ -852,8 +849,8 @@ void lcd_quick_feedback(const bool clear_buttons) {
       #else
         card.startFileprint();
         print_job_timer.start();
-      #endif
-      lcd_reset_status();
+        lcd_reset_status();
+      #endif      
     }
 
     void lcd_sdcard_stop() {
@@ -1157,27 +1154,26 @@ void lcd_quick_feedback(const bool clear_buttons) {
         #if !PIN_EXISTS(SD_DETECT)
           MENU_ITEM(gcode, MSG_CNG_SDCARD, PSTR("M21"));  // SD-card changed by user
         #endif
+
+        #if ENABLED(POWER_LOSS_RECOVERY)
+          if(card.jobRecoverFileExists()) {
+            card.openJobRecoveryFile(true);
+            card.loadJobRecoveryInfo();
+            card.closeJobRecoveryFile();
+            if (job_recovery_info.valid_head && job_recovery_info.valid_head == job_recovery_info.valid_foot) {
+              MENU_ITEM(function, MSG_RESUME_PRINT, lcd_power_loss_recovery_resume);
+            }
+          }
+        #endif
       }
       else {
-        MENU_ITEM(submenu, MSG_NO_CARD, lcd_sdcard_menu);
+        STATIC_ITEM(" " MSG_NO_CARD, false);
         #if !PIN_EXISTS(SD_DETECT)
           MENU_ITEM(gcode, MSG_INIT_SDCARD, PSTR("M21")); // Manually initialize the SD-card via user interface
         #endif
       }
-    #endif // SDSUPPORT
 
-    #if ENABLED(POWER_LOSS_RECOVERY)
-      if (card.cardOK) {
-        if(card.jobRecoverFileExists()) {
-          card.openJobRecoveryFile(true);
-          card.loadJobRecoveryInfo();
-          card.closeJobRecoveryFile();
-          if (job_recovery_info.valid_head && job_recovery_info.valid_head == job_recovery_info.valid_foot) {
-            MENU_ITEM(function, MSG_RESUME_PRINT, lcd_power_loss_recovery_resume);
-          }
-        }
-      }
-    #endif
+    #endif // SDSUPPORT
 
     END_MENU();
   }

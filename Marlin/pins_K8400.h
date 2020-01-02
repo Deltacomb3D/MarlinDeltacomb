@@ -64,7 +64,7 @@
 // Misc. Functions
 //
 #undef PS_ON_PIN
-#undef KILL_PIN
+#undef PAUSE_PIN
 #undef SD_DETECT_PIN
 
 #if Z_STEP_PIN == 26

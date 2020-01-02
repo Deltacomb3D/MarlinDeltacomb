@@ -925,9 +925,9 @@ bool enqueue_and_echo_command(const char* cmd) {
   #endif
 #endif
 
-void setup_killpin() {
-  #if HAS_KILL
-    SET_INPUT_PULLUP(KILL_PIN);
+void setup_pausepin() {
+  #if HAS_PAUSE
+    SET_INPUT_PULLUP(PAUSE_PIN);
   #endif
 }
 
@@ -7374,6 +7374,7 @@ inline void gcode_M17() {
       }
     #endif
     print_job_timer.pause();
+    lcd_reset_status();
 
     // Save current position
     COPY(resume_position, current_position);
@@ -7629,7 +7630,9 @@ inline void gcode_M17() {
         print_job_timer.resume(parser.value_long());
       else
     #endif
-        print_job_timer.start();
+    
+    print_job_timer.start();
+    lcd_reset_status();
   }
 
   /**
@@ -14886,7 +14889,7 @@ void disable_all_steppers() {
  *  - Check for maximum inactive time between commands
  *  - Check for maximum inactive time between stepper commands
  *  - Check if pin CHDK needs to go LOW
- *  - Check for KILL button held down
+ *  - Check for PAUSE button held down
  *  - Check for HOME button held down
  *  - Check if cooling fan needs to be switched on
  *  - Check if an idle but hot extruder needs filament extruded (EXTRUDER_RUNOUT_PREVENT)
@@ -14943,25 +14946,27 @@ void manage_inactivity(const bool ignore_stepper_queue/*=false*/) {
     }
   #endif
 
-  #if HAS_KILL
+  #if HAS_PAUSE
 
-    // Check if the kill button was pressed and wait just in case it was an accidental
-    // key kill key press
+    // Check if the pause button was pressed and wait just in case it was an accidental
+    // key pause key press
     // -------------------------------------------------------------------------------
-    static int killCount = 0;   // make the inactivity button a bit less responsive
-    const int KILL_DELAY = 750;
-    if (!READ(KILL_PIN))
-      killCount++;
-    else if (killCount > 0)
-      killCount--;
+    static int pauseCount = 0;   // make the inactivity button a bit less responsive
+    const int PAUSE_DELAY = 750;
+    if (!READ(PAUSE_PIN))
+      pauseCount++;
+    else if (pauseCount > 0)
+      pauseCount--;
 
     // Exceeded threshold and we can confirm that it was not accidental
-    // KILL the machine
+    // PAUSE the machine
     // ----------------------------------------------------------------
-    if (killCount >= KILL_DELAY) {
-      SERIAL_ERROR_START();
-      SERIAL_ERRORLNPGM(MSG_KILL_BUTTON);
-      kill(PSTR(MSG_KILLED));
+    if (pauseCount >= PAUSE_DELAY) {
+      if (card.isFileOpen()) {
+        if (card.sdprinting) lcd_sdcard_pause();
+        else lcd_sdcard_resume();
+      }
+      pauseCount = 0;
     }
   #endif
 
@@ -15231,7 +15236,7 @@ void setup() {
     runout.setup();
   #endif
 
-  setup_killpin();
+  setup_pausepin();
 
   setup_powerhold();
 

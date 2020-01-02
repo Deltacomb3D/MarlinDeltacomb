@@ -143,7 +143,7 @@
 #if ENABLED(ULTRA_LCD)
 
   #if !MB(MINIRAMBO_10A)
-    #define KILL_PIN       32
+    #define PAUSE_PIN      32
   #endif
 
   #if ENABLED(NEWPANEL)

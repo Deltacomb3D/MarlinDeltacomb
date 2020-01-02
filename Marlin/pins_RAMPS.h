@@ -425,7 +425,7 @@
 
       #define BTN_ENC           35
       #define SD_DETECT_PIN     49
-      #define KILL_PIN          41
+      #define PAUSE_PIN         41
 
       #if ENABLED(BQ_LCD_SMART_CONTROLLER)
         #define LCD_BACKLIGHT_PIN 39
@@ -444,7 +444,7 @@
       #define BTN_EN2           43
       #define BTN_ENC           32
       #define LCD_SDSS          SDSS
-      #define KILL_PIN          41
+      #define PAUSE_PIN         41
 
     #elif ENABLED(LCD_I2C_VIKI)
 
@@ -470,7 +470,7 @@
       #define BTN_ENC           39
 
       #define SD_DETECT_PIN     -1   // Pin 49 for display sd interface, 72 for easy adapter board
-      #define KILL_PIN          31
+      #define PAUSE_PIN         31
 
     #elif ENABLED(ELB_FULL_GRAPHIC_CONTROLLER)
 
@@ -486,7 +486,7 @@
 
       #define LCD_SDSS          SDSS
       #define SD_DETECT_PIN     49
-      #define KILL_PIN          41
+      #define PAUSE_PIN         41
 
     #elif ENABLED(MKS_MINI_12864)   // Added in Marlin 1.1.6
 
@@ -509,7 +509,7 @@
       #define BTN_ENC           35
 
       #define SD_DETECT_PIN     49
-      #define KILL_PIN          41
+      #define PAUSE_PIN         41
 
     #elif ENABLED(MINIPANEL)
 
@@ -532,7 +532,7 @@
       #define BTN_ENC           59
 
       #define SD_DETECT_PIN     49
-      #define KILL_PIN          64
+      #define PAUSE_PIN         64
 
     #elif ENABLED(ZONESTAR_LCD)
 
@@ -563,7 +563,7 @@
 
       #if ENABLED(G3D_PANEL)
         #define SD_DETECT_PIN   49
-        #define KILL_PIN        41
+        #define PAUSE_PIN       41
       #endif
 
     #endif

@@ -129,7 +129,7 @@
   #undef SD_DETECT_PIN
   #define SD_DETECT_PIN 22
 
-  #undef KILL_PIN
-  #define KILL_PIN 32
+  #undef PAUSE_PIN
+  #define PAUSE_PIN 32
 
 #endif

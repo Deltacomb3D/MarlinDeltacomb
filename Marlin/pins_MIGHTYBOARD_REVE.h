@@ -220,8 +220,8 @@
 
   #define BTN_EN2          75   // J4, UP
   #define BTN_EN1          73   // J3, DOWN
-  //STOP button connected as KILL_PIN
-  #define KILL_PIN         14   // J1, RIGHT
+  //STOP button connected as PAUSE_PIN
+  #define PAUSE_PIN        14   // J1, RIGHT
   //KILL - not connected
 
   #define BEEPER_PIN        8   // H5, SD_WP
