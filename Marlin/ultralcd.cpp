@@ -2939,11 +2939,12 @@ void lcd_quick_feedback(const bool clear_buttons) {
       START_MENU();
       MENU_BACK(MSG_BACK);
       #if ENABLED(DELTA_AUTO_CALIBRATION)
-        MENU_ITEM(gcode, MSG_DELTA_AUTO_CALIBRATE, PSTR("G33"));
-        #if ENABLED(EEPROM_SETTINGS)
-          MENU_ITEM(function, MSG_STORE_EEPROM, lcd_store_settings);
-          MENU_ITEM(function, MSG_LOAD_EEPROM, lcd_load_settings);
-        #endif
+        MENU_ITEM(gcode, MSG_DELTA_AUTO_CALIBRATE, PSTR("M665 H" STRINGIFY(DELTA_HEIGHT) "\nG33\nM500"));
+        MENU_ITEM(gcode, MSG_DELTA_HEIGHT_CALIBRATE, PSTR("M665 H" STRINGIFY(DELTA_HEIGHT) "\nG33 P1\nM500"));
+        //#if ENABLED(EEPROM_SETTINGS)
+        //  MENU_ITEM(function, MSG_STORE_EEPROM, lcd_store_settings);
+        //  MENU_ITEM(function, MSG_LOAD_EEPROM, lcd_load_settings);
+        //#endif
       #endif
       MENU_ITEM(submenu, MSG_DELTA_SETTINGS, lcd_delta_settings);
       #if ENABLED(DELTA_CALIBRATION_MENU)
