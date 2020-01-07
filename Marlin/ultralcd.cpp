@@ -2917,6 +2917,7 @@ void lcd_quick_feedback(const bool clear_buttons) {
       #if HAS_LEVELING
         reset_bed_level(); // After changing kinematics bed-level data is no longer valid
       #endif
+      lcd_store_settings();
       recalc_delta_settings();
     }
 
@@ -2939,7 +2940,7 @@ void lcd_quick_feedback(const bool clear_buttons) {
       START_MENU();
       MENU_BACK(MSG_BACK);
       #if ENABLED(DELTA_AUTO_CALIBRATION)
-        MENU_ITEM(gcode, MSG_DELTA_AUTO_CALIBRATE, PSTR("M665 H" STRINGIFY(DELTA_HEIGHT) "\nG33\nM500"));
+        MENU_ITEM(gcode, MSG_DELTA_AUTO_CALIBRATE, PSTR("M665 H" STRINGIFY(DELTA_HEIGHT) "\nM666 X0 Y0 Z0\nG33 P3 T1\nM500"));
         MENU_ITEM(gcode, MSG_DELTA_HEIGHT_CALIBRATE, PSTR("M665 H" STRINGIFY(DELTA_HEIGHT) "\nG33 P1\nM500"));
         //#if ENABLED(EEPROM_SETTINGS)
         //  MENU_ITEM(function, MSG_STORE_EEPROM, lcd_store_settings);

@@ -31,7 +31,10 @@
  * PRINTER_MODEL_DC20FC     - Deltacomb DC-20 + Flux Capacitor 2x
  * PRINTER_MODEL_DC20FCHB   - Deltacomb DC-20 + Flux Capacitor 2x + Heat Bed
  * PRINTER_MODEL_DC202E     - Deltacomb DC-20 + Dual Extruder
- * PRINTER_MODEL_DC202E     - Deltacomb DC-20 + Dual Extruder + Heat Bed
+ * PRINTER_MODEL_DC202EHB   - Deltacomb DC-20 + Dual Extruder + Heat Bed
+ * 
+ * PRINTER_MODEL_DC20_V35   - Deltacomb DC-20 (v3.5)
+ * PRINTER_MODEL_DC20HB_V35 - Deltacomb DC-20 + Heat Bed (v3.5)
  *
  */
 #define PRINTER_MODEL_DC20FCHB
@@ -63,6 +66,16 @@
 
 #ifdef PRINTER_MODEL_DC202EHB
  #define INCLUDE_CONFIGURATION "Configuration_DC202EHB.h"
+ #define INCLUDE_CONFIGURATION_ADV "Configuration_adv.h"
+#endif
+
+#ifdef PRINTER_MODEL_DC20_V35
+ #define INCLUDE_CONFIGURATION "Configuration_DC20_V35.h"
+ #define INCLUDE_CONFIGURATION_ADV "Configuration_adv.h"
+#endif
+
+#ifdef PRINTER_MODEL_DC20HB_V35
+ #define INCLUDE_CONFIGURATION "Configuration_DC20HB_V35.h"
  #define INCLUDE_CONFIGURATION_ADV "Configuration_adv.h"
 #endif
 
