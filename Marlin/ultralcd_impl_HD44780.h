@@ -217,9 +217,14 @@ static void createChar_P(const char c, const byte * const ptr) {
   lcd.createChar(c, temp);
 }
 
+////////////////////////////////////////////
+//////// Custom characters setter //////////
+////////////////////////////////////////////
+
 #define CHARSET_MENU 0
 #define CHARSET_INFO 1
 #define CHARSET_BOOT 2
+#define CHARSET_PROG 3
 
 static void lcd_set_custom_characters(
   #if ENABLED(LCD_PROGRESS_BAR) || ENABLED(SHOW_BOOTSCREEN)
@@ -228,43 +233,12 @@ static void lcd_set_custom_characters(
 ) {
   // CHARSET_BOOT
   #if ENABLED(SHOW_BOOTSCREEN)
-    const static PROGMEM byte corner[4][8] = { {
-      B00000,
-      B00000,
-      B00000,
-      B00000,
-      B00001,
-      B00010,
-      B00100,
-      B00100
-    }, {
-      B00000,
-      B00000,
-      B00000,
-      B11100,
-      B11100,
-      B01100,
-      B00100,
-      B00100
-    }, {
-      B00100,
-      B00010,
-      B00001,
-      B00000,
-      B00000,
-      B00000,
-      B00000,
-      B00000
-    }, {
-      B00100,
-      B01000,
-      B10000,
-      B00000,
-      B00000,
-      B00000,
-      B00000,
-      B00000
-    } };
+  const static PROGMEM byte corner[4][8] = { 
+    {B00000,B00000,B00000,B00000,B00001,B00010,B00100,B00100},
+    {B00000,B00000,B00000,B11100,B11100,B01100,B00100,B00100},
+    {B00100,B00010,B00001,B00000,B00000,B00000,B00000,B00000},
+    {B00100,B01000,B10000,B00000,B00000,B00000,B00000,B00000}
+  };
   #endif // SHOW_BOOTSCREEN
 
   // CHARSET_INFO
@@ -405,6 +379,17 @@ static void lcd_set_custom_characters(
 
   #endif // SDSUPPORT
 
+  const static PROGMEM byte progressbar[8][8] = {
+    {B00001,B00010,B00100,B00100,B00100,B00010,B00001,B00000}, // Left corner empty
+    {B00001,B00011,B00111,B00111,B00111,B00011,B00001,B00000}, // Left corner fill
+    {B11111,B00000,B00000,B00000,B00000,B00000,B11111,B00000}, // Middle Enpty
+    {B11111,B11000,B11000,B11000,B11000,B11000,B11111,B00000}, // Middle filled min
+    {B11111,B11100,B11100,B11100,B11100,B11100,B11111,B00000}, // Middle filled mid
+    {B11111,B11111,B11111,B11111,B11111,B11111,B11111,B00000}, // Middle full filled
+    {B10000,B01000,B00100,B00100,B00100,B01000,B10000,B00000}, // Right corner empty
+    {B10000,B11000,B11100,B11100,B11100,B11000,B10000,B00000}  // Right corner fill
+  };
+  
   #if ENABLED(SHOW_BOOTSCREEN)
     // Set boot screen corner characters
     if (screen_charset == CHARSET_BOOT) {
@@ -493,6 +478,10 @@ void lcd_printPGM_utf(const char *str, uint8_t n=LCD_WIDTH) {
 }
 
 #if ENABLED(SHOW_BOOTSCREEN)
+
+  ////////////////////////////////////////////
+  ////////// Boot Screen Functions ///////////
+  ////////////////////////////////////////////
 
   void lcd_erase_line(const int16_t line) {
     lcd.setCursor(0, line);

@@ -5304,7 +5304,7 @@ void home_all_axes() { gcode_G28(true); }
           enable_soft_endstops = soft_endstops_enabled;
         #endif
         // Move close to the bed before the first point
-        do_blocking_move_to_z(0);
+        do_blocking_move_to_z(1); // GR
       }
       else {
 
@@ -6082,7 +6082,7 @@ void home_all_axes() { gcode_G28(true); }
           LOOP_CAL_RAD(rad)
             z_pt[rad] /= _7P_STEP / steps;
 
-        do_blocking_move_to_xy(0.0, 0.0);
+        do_blocking_move_to(0.0, 0.0, 5.0);
       }
     }
     return true;
@@ -7388,7 +7388,7 @@ inline void gcode_M17() {
 
     // Park the nozzle by moving up by z_lift and then moving to (x_pos, y_pos)
     if (!axis_unhomed_error())
-      Nozzle::park(2, park_point);
+      Nozzle::park(1, park_point);
 
     // Unload the filament
     if (unload_length)
@@ -9530,7 +9530,10 @@ inline void gcode_M121() { endstops.enable_globally(false); }
       #endif
     );
 
-    point_t park_point = NOZZLE_PARK_POINT;
+    //point_t park_point = NOZZLE_PARK_POINT;
+
+    // Deltacomb Park Point
+    point_t park_point = { 0, Y_MAX_POS , delta_height - delta_diagonal_rod + sqrt(pow(delta_diagonal_rod,2) - pow(delta_calibration_radius,2)) - 3 };
 
     // Move XY axes to filament change position or given position
     if (parser.seenval('X')) park_point.x = parser.linearval('X');

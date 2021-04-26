@@ -37,56 +37,26 @@
  * PRINTER_MODEL_DC20HB_V35 - Deltacomb DC-20 + Heat Bed (v3.5)
  *
  */
-#define PRINTER_MODEL_DC20FCHB
 
-#ifdef PRINTER_MODEL_DC20
- #define INCLUDE_CONFIGURATION "Configuration_DC20.h"
- #define INCLUDE_CONFIGURATION_ADV "Configuration_adv.h"
-#endif
-
-#ifdef PRINTER_MODEL_DC20HB
- #define INCLUDE_CONFIGURATION "Configuration_DC20HB.h"
- #define INCLUDE_CONFIGURATION_ADV "Configuration_adv.h"
-#endif
-
-#ifdef PRINTER_MODEL_DC20FC
- #define INCLUDE_CONFIGURATION "Configuration_DC20FC.h"
- #define INCLUDE_CONFIGURATION_ADV "Configuration_adv_FC.h"
-#endif
-
-#ifdef PRINTER_MODEL_DC20FCHB
- #define INCLUDE_CONFIGURATION "Configuration_DC20FCHB.h"
- #define INCLUDE_CONFIGURATION_ADV "Configuration_adv_FC.h"
-#endif
-
-#ifdef PRINTER_MODEL_DC202E
- #define INCLUDE_CONFIGURATION "Configuration_DC202E.h"
- #define INCLUDE_CONFIGURATION_ADV "Configuration_adv.h"
-#endif
-
-#ifdef PRINTER_MODEL_DC202EHB
- #define INCLUDE_CONFIGURATION "Configuration_DC202EHB.h"
- #define INCLUDE_CONFIGURATION_ADV "Configuration_adv.h"
-#endif
-
-#ifdef PRINTER_MODEL_DC20_V35
- #define INCLUDE_CONFIGURATION "Configuration_DC20_V35.h"
- #define INCLUDE_CONFIGURATION_ADV "Configuration_adv.h"
-#endif
-
-#ifdef PRINTER_MODEL_DC20HB_V35
- #define INCLUDE_CONFIGURATION "Configuration_DC20HB_V35.h"
- #define INCLUDE_CONFIGURATION_ADV "Configuration_adv.h"
-#endif
+#define PRINTER_MODEL_DC20 "Configuration_DC20.h"
+#define PRINTER_MODEL_DC20_190 "Configuration_DC20_190.h"
+#define PRINTER_MODEL_DC20FC "Configuration_DC20FC.h"
+#define PRINTER_MODEL_DC20FCHB "Configuration_DC20FCHB.h"
+#define PRINTER_MODEL_DC20FCHB_190 "Configuration_DC20FCHB_190.h"
+#define PRINTER_MODEL_DC20HB "Configuration_DC20HB.h"
+#define PRINTER_MODEL_DC20HB_190 "Configuration_DC20HB_190.h"
+#define PRINTER_MODEL_DC202E "Configuration_DC202E.h"
+#define PRINTER_MODEL_DC202EHB "Configuration_DC202EHB.h"
+#define PRINTER_MODEL_DC202EHB_190 "Configuration_DC202EHB_190.h"
 
 #include "boards.h"
 #include "macros.h"
 #include "Version.h"
-//#include "Configuration.h"
-#include INCLUDE_CONFIGURATION
+#include PRINTER_MODEL_DC20HB
+#include "Configuration_common.h"
 #include "Conditionals_LCD.h"
 #include "drivers.h"
-#include INCLUDE_CONFIGURATION_ADV
+#include "Configuration_adv.h"
 //#include "Configuration_adv.h"
 
 #if USE_MARLINSERIAL

@@ -280,6 +280,10 @@ void lcd_printPGM_utf(const char *str, uint8_t n=LCD_WIDTH) {
 
 #if ENABLED(SHOW_BOOTSCREEN)
 
+  ////////////////////////////////////////////
+  ////////// Boot Screen Functions ///////////
+  ////////////////////////////////////////////
+
   #if ENABLED(SHOW_CUSTOM_BOOTSCREEN)
 
     void lcd_custom_bootscreen() {

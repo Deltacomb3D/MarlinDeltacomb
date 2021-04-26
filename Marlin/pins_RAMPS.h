@@ -192,8 +192,8 @@
 // Temperature Sensors
 //
 #define TEMP_0_PIN         13   // Analog Input
-#define TEMP_1_PIN         15   // Analog Input
-#define TEMP_BED_PIN       14   // Analog Input
+#define TEMP_1_PIN         14   // Analog Input
+#define TEMP_BED_PIN       15   // Analog Input
 
 // SPI for Max6675 or Max31855 Thermocouple
 #if DISABLED(SDSUPPORT)
@@ -277,9 +277,14 @@
   #define FILWIDTH_PIN      5   // Analog Input on AUX2
 #endif
 
-// define digital pin 4 for the filament runout sensor. Use the RAMPS 1.4 digital input 4 on the servos connector
+// define digital pin for the filament runout sensor. Use the RAMPS 1.4 X min endstop
 #ifndef FIL_RUNOUT_PIN
-  #define FIL_RUNOUT_PIN    4
+  #define FIL_RUNOUT_PIN    3
+#endif
+
+// define digital pin for the filament runout sensor. Use the RAMPS 1.4 Y min endstop
+#ifndef FIL_RUNOUT2_PIN
+  #define FIL_RUNOUT2_PIN   14
 #endif
 
 #ifndef PS_ON_PIN

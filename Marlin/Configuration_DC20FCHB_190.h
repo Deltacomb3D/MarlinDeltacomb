@@ -1,7 +1,7 @@
 #define STRING_SPLASH_LINE1 "DC-20 FLUX + HEATBEB"
 
 #define CUSTOM_MACHINE_NAME     "DC-20 FCHB"
-#define CUSTOM_MACHINE_VERSION  "r4.0"
+#define CUSTOM_MACHINE_VERSION  "r4.0 (190mm)"
 
 #define EXTRUDERS 2
 #define SINGLENOZZLE
@@ -10,8 +10,8 @@
 #define TEMP_SENSOR_BED 11
 
 #define DELTA_PRINTABLE_RADIUS 95.0 // mm
-#define DELTA_DIAGONAL_ROD 200.0 // mm
-#define DELTA_HEIGHT 240.00 // L'altezza predefinita è più o meno 5mm maggiore dell'altezza massima
+#define DELTA_DIAGONAL_ROD 189.0 // mm
+#define DELTA_HEIGHT 255.00 // L'altezza predefinita è più o meno 5mm maggiore dell'altezza massima
 #define DELTA_RADIUS 89.70 //mm  Get this value from auto calibrate
 
 //#define POWER_LOSS_RECOVERY
@@ -22,7 +22,7 @@
 #define FILAMENT_UNLOAD_PURGE_LENGTH         0
 
 // DC NewGen 19v + Ramps RRD
-//#define DC_RAMPS_19V_SUPPLY
+#define DC_RAMPS_19V_SUPPLY
 
 // TMC Drivers
 //#define HAS_DRIVER_TMC

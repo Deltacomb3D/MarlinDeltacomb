@@ -237,7 +237,15 @@
  * Multiple extruders can be assigned to the same pin in which case
  * the fan will turn on when any selected extruder is above the threshold.
  */
-#define E0_AUTO_FAN_PIN -1
+
+#if MOTHERBOARD == BOARD_RAMPS_14_EFF
+  #define E0_AUTO_FAN_PIN 8
+#elif ENABLED(DC_RAMPS_19V_SUPPLY)
+  #define E0_AUTO_FAN_PIN 5
+#else
+  #define E0_AUTO_FAN_PIN -1
+#endif 
+
 #define E1_AUTO_FAN_PIN -1
 #define E2_AUTO_FAN_PIN -1
 #define E3_AUTO_FAN_PIN -1
@@ -395,7 +403,7 @@
 //#define CODEPENDENT_XY_HOMING
 
 // job abort and homing routine
-#define JOB_ABORT_ROUNTINE "G91\nG1 E-4\nG28\nM524"
+//#define JOB_ABORT_ROUNTINE "G91\nG1 E-4\nG28\nM524"
 
 // @section machine
 
@@ -598,10 +606,10 @@
    * an option on the LCD screen to continue the print from the last-known
    * point in the file.
    */
-  #define POWER_LOSS_RECOVERY
+  //#define POWER_LOSS_RECOVERY
   #if ENABLED(POWER_LOSS_RECOVERY)
-    #define POWER_LOSS_PIN   44     // Pin to detect power loss
-    #define POWER_LOSS_STATE HIGH   // State of pin indicating power loss
+    #define POWER_LOSS_PIN   22     // Pin to detect power loss
+    #define POWER_LOSS_STATE LOW   // State of pin indicating power loss
   #endif
 
   /**
@@ -660,7 +668,7 @@
    * On print completion the LCD Menu will open with the file selected.
    * You can just click to start the print, or navigate elsewhere.
    */
-  #define SD_REPRINT_LAST_SELECTED_FILE
+  //#define SD_REPRINT_LAST_SELECTED_FILE
 
   /**
    * Auto-report SdCard status with M27 S<seconds>
@@ -800,7 +808,7 @@
 //
 // G2/G3 Arc Support
 //
-#define ARC_SUPPORT               // Disable this feature to save ~3226 bytes
+//#define ARC_SUPPORT               // Disable this feature to save ~3226 bytes
 #if ENABLED(ARC_SUPPORT)
   #define MM_PER_ARC_SEGMENT  1   // Length of each arc segment
   #define N_ARC_CORRECTION   25   // Number of intertpolated segments between corrections
@@ -819,7 +827,7 @@
 #endif
 
 // Moves (or segments) with fewer steps than this will be joined with the next move
-#define MIN_STEPS_PER_SEGMENT 6
+#define MIN_STEPS_PER_SEGMENT 3
 
 /**
  * Minimum delay after setting the stepper DIR (in ns)
@@ -986,7 +994,7 @@
 #define ADVANCED_PAUSE_FEATURE
 #if ENABLED(ADVANCED_PAUSE_FEATURE)
   // Park position for filament change as { X, Y, Z }
-  #define FILAMENT_CHANGE_PARK_POINT  { 0, Y_MIN_POS , Z_MAX_POS }
+  #define FILAMENT_CHANGE_PARK_POINT  { 0, Y_MIN_POS , delta_height };
 
   #define FILAMENT_CHANGE_UNLOAD_FEEDRATE     50  // (mm/s) Unload filament feedrate. This can be pretty fast.
   #define FILAMENT_CHANGE_UNLOAD_ACCEL        50  // (mm/s^2) Lower acceleration may allow a faster feedrate.
@@ -999,7 +1007,7 @@
                                                   // 0 to disable start loading and skip to fast load only
   #define FILAMENT_CHANGE_FAST_LOAD_FEEDRATE  50  // (mm/s) Load filament feedrate. This can be pretty fast.
   #define FILAMENT_CHANGE_FAST_LOAD_ACCEL     25  // (mm/s^2) Lower acceleration may allow a faster feedrate.
-  #define FILAMENT_CHANGE_FAST_LOAD_LENGTH   470  // (mm) Load length of filament, from extruder gear to nozzle.
+  //#define FILAMENT_CHANGE_FAST_LOAD_LENGTH   440  // (mm) Load length of filament, from extruder gear to nozzle.
                                                   //   For Bowden, the full length of the tube and nozzle.
                                                   //   For direct drive, the full length of the nozzle.
   //#define ADVANCED_PAUSE_CONTINUOUS_PURGE       // Purge continuously up to the purge length until interrupted.
@@ -1012,7 +1020,7 @@
                                                   // Filament Unload does a Retract, Delay, and Purge first:
   #define FILAMENT_UNLOAD_RETRACT_LENGTH      20  // (mm) Unload initial retract length.
   #define FILAMENT_UNLOAD_DELAY             5000  // (ms) Delay for the filament to cool after retract.
-  #define FILAMENT_UNLOAD_PURGE_LENGTH         1  // (mm) An unretract is done, then this length is purged.
+  //#define FILAMENT_UNLOAD_PURGE_LENGTH         1  // (mm) An unretract is done, then this length is purged.
   
   #define FILAMENT_CHANGE_ALERT_BEEPS         10  // Number of alert beeps to play when a response is needed.
   #define HOME_BEFORE_FILAMENT_CHANGE           // Ensure homing has been completed prior to parking for filament change

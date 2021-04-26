@@ -1,7 +1,9 @@
-#define STRING_SPLASH_LINE1 "DC-20 ORIGINAL"     
+#define STRING_SPLASH_LINE1 "DC-20 ORIGINAL"
 
-#define CUSTOM_MACHINE_NAME     "DC-20"
-#define CUSTOM_MACHINE_VERSION  "r4.0"
+#define MOTHERBOARD BOARD_RAMPS_14_EFB
+
+#define CUSTOM_MACHINE_NAME     "DC-20 ORIGINAL"
+#define CUSTOM_MACHINE_VERSION  "r3.5 (190mm)"
 
 #define EXTRUDERS 1
 
@@ -9,8 +11,8 @@
 #define TEMP_SENSOR_BED 0
 
 #define DELTA_PRINTABLE_RADIUS 95.0 // mm
-#define DELTA_DIAGONAL_ROD 200.0 // mm
-#define DELTA_HEIGHT 245.00 // L'altezza predefinita è più o meno 5mm maggiore dell'altezza massima
+#define DELTA_DIAGONAL_ROD 189.0 // mm
+#define DELTA_HEIGHT 255.00 // L'altezza predefinita è più o meno 5mm maggiore dell'altezza massima
 #define DELTA_RADIUS 89.70 //mm  Get this value from auto calibrate
 
 //#define POWER_LOSS_RECOVERY
@@ -25,6 +27,3 @@
 
 // TMC Drivers
 //#define HAS_DRIVER_TMC
-
-// Detect filament runout
-//#define HAS_FILAMENT_SENSORS
