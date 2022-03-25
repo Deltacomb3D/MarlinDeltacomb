@@ -36,6 +36,7 @@
  * PRINTER_MODEL_DC20_V35   - Deltacomb DC-20 (v3.5)
  * PRINTER_MODEL_DC20HB_V35 - Deltacomb DC-20 + Heat Bed (v3.5)
  *
+ * PRINTER_MODEL_DC21       - Deltacomb DC-21 (DC-20 Extended)
  */
 
 #define PRINTER_MODEL_DC20 "Configuration_DC20.h"
@@ -48,6 +49,7 @@
 #define PRINTER_MODEL_DC202E "Configuration_DC202E.h"
 #define PRINTER_MODEL_DC202EHB "Configuration_DC202EHB.h"
 #define PRINTER_MODEL_DC202EHB_190 "Configuration_DC202EHB_190.h"
+#define PRINTER_MODEL_DC21_190 "Configuration_DC21_190.h"
 
 #include "boards.h"
 #include "macros.h"

@@ -1241,16 +1241,20 @@ inline void get_serial_commands() {
 
   #if ENABLED(POWER_LOSS_RECOVERY)
 
-    inline bool drain_job_recovery_commands() {
-      static uint8_t job_recovery_commands_index = 0; // Resets on reboot
-      if (job_recovery_commands_count) {
-        if (_enqueuecommand(job_recovery_commands[job_recovery_commands_index])) {
-          ++job_recovery_commands_index;
-          if (!--job_recovery_commands_count) job_recovery_phase = JOB_RECOVERY_DONE;
-        }
-        return true;
+    inline void drain_job_recovery_commands() {
+      static uint8_t job_recovery_commands_index = 1; // Resets on reboot
+      static char command[MAX_CMD_SIZE];
+
+      if(job_recovery_resume(job_recovery_commands_index, command)) {
+        job_recovery_phase = JOB_RECOVERY_DONE;
+        return;
       }
-      return false;
+
+      #if ENABLED(DEBUG_POWER_LOSS_RECOVERY)
+        SERIAL_PROTOCOLLNPAIR("[Job Recovery] Enqueue ", command);
+      #endif
+
+      if (_enqueuecommand(command)) ++job_recovery_commands_index;
     }
 
   #endif
@@ -1273,7 +1277,11 @@ void get_available_commands() {
 
   #if ENABLED(POWER_LOSS_RECOVERY)
     // Commands for power-loss recovery take precedence
-    if (job_recovery_phase == JOB_RECOVERY_YES && drain_job_recovery_commands()) return;
+    //if (job_recovery_phase == JOB_RECOVERY_YES && drain_job_recovery_commands()) return;
+    if (job_recovery_phase == JOB_RECOVERY_YES) {
+      drain_job_recovery_commands();
+      return;
+    } 
   #endif
 
   #if ENABLED(SDSUPPORT)
@@ -2712,7 +2720,6 @@ void clean_up_after_endstop_or_probe_move() {
    *  Enable: Current position = "unleveled" physical position
    */
   void set_bed_leveling_enabled(const bool enable/*=true*/) {
-
     #if ENABLED(AUTO_BED_LEVELING_BILINEAR)
       const bool can_change = (!enable || leveling_is_valid());
     #else
@@ -3948,7 +3955,7 @@ inline void gcode_G4() {
 
 #endif // CNC_WORKSPACE_PLANES
 
-#if ENABLED(CNC_COORDINATE_SYSTEMS)
+#if ENABLED(CNC_COORDINATE_SYSTEMS) 
 
   /**
    * Select a coordinate system and update the workspace offset.
@@ -4034,7 +4041,10 @@ inline void gcode_G4() {
   inline void gcode_G27() {
     // Don't allow nozzle parking without homing first
     if (axis_unhomed_error()) return;
-    Nozzle::park(parser.ushortval('P'));
+    // GbR: La Z nel parkpoint è forzata alla massima altezza sotto l'asse C
+    point_t park_point = NOZZLE_PARK_POINT;
+    park_point.z = delta_clip_start_height;
+    Nozzle::park(parser.ushortval('P'), park_point);
   }
 #endif // NOZZLE_PARK_FEATURE
 
@@ -6006,7 +6016,7 @@ void home_all_axes() { gcode_G28(true); }
       return probe_pt(nx, ny, stow ? PROBE_PT_STOW : PROBE_PT_RAISE, 0, false);
     #else
       UNUSED(stow);
-      return lcd_probe_pt(nx, ny);
+      return lcd_probe_pt(nx, ny) - 0.1; // GbR : Small offset for delta calibration
     #endif
   }
 
@@ -6029,13 +6039,14 @@ void home_all_axes() { gcode_G28(true); }
                _7p_14_intermediates = probe_points == 10,
                _7p_intermed_points  = probe_points >= 4,
                _7p_6_center         = probe_points >= 5 && probe_points <= 7,
-               _7p_9_center         = probe_points >= 8;
+               _7p_9_center         = probe_points >= 8,
+               _cal_bedlevel        = probe_points == -2; // GbR : DC-UCR
 
     LOOP_CAL_ALL(rad) z_pt[rad] = 0.0;
 
     if (!_0p_calibration) {
 
-      if (!_7p_no_intermediates && !_7p_4_intermediates && !_7p_11_intermediates) { // probe the center
+      if (!_7p_no_intermediates && !_7p_4_intermediates && !_7p_11_intermediates && !_cal_bedlevel) { // probe the center
         z_pt[CEN] += calibration_probe(0, 0, stow_after_each);
         if (isnan(z_pt[CEN])) return false;
       }
@@ -6053,7 +6064,7 @@ void home_all_axes() { gcode_G28(true); }
       }
 
       if (!_1p_calibration) {  // probe the radius
-        const CalEnum start  = _4p_opposite_points ? _AB : __A;
+        const CalEnum start  = _4p_opposite_points || _cal_bedlevel ? _AB : __A;  // GbR : DC-UCR
         const float   steps  = _7p_14_intermediates ? _7P_STEP / 15.0 : // 15r * 6 + 10c = 100
                                _7p_11_intermediates ? _7P_STEP / 12.0 : // 12r * 6 +  9c = 81
                                _7p_8_intermediates  ? _7P_STEP /  9.0 : //  9r * 6 + 10c = 64
@@ -6070,6 +6081,11 @@ void home_all_axes() { gcode_G28(true); }
             const float a = RADIANS(210 + (360 / NPP) *  (rad - 1)),
                         r = delta_calibration_radius * (1 - 0.1 * (zig_zag ? offset - circle : circle)),
                         interpol = fmod(rad, 1);
+            // GbR: Porta la testina al centro ad ogni misurazione per rendere 
+            //      simmetrico lo spostamento che potrebbe essere influenzato 
+            //      dal momento torcente delle joint magnetiche
+            do_blocking_move_to_z(Z_CLEARANCE_BETWEEN_PROBES); // GbR : DC-UCR
+            do_blocking_move_to_xy(0, 0); // GbR : DC-UCR
             const float z_temp = calibration_probe(cos(a) * r, sin(a) * r, stow_after_each);
             if (isnan(z_temp)) return false;
             // split probe point to neighbouring calibration points
@@ -6082,7 +6098,8 @@ void home_all_axes() { gcode_G28(true); }
           LOOP_CAL_RAD(rad)
             z_pt[rad] /= _7P_STEP / steps;
 
-        do_blocking_move_to(0.0, 0.0, 5.0);
+        // GbR: Stessa funzionalità esposta sopra
+        do_blocking_move_to(0.0, 0.0, Z_CLEARANCE_BETWEEN_PROBES);
       }
     }
     return true;
@@ -6205,6 +6222,7 @@ void home_all_axes() { gcode_G28(true); }
    *      P2       Probe center and towers. Calibrate height, endstops and delta radius.
    *      P3       Probe all positions: center, towers and opposite towers. Calibrate all.
    *      P4-P10   Probe all positions at different intermediate locations and average them.
+   *      P-2      Probe opposite tower to create a bed level mesh (GbR: DC-UCR)
    *
    *   T   Don't calibrate tower angle corrections
    *
@@ -6223,8 +6241,8 @@ void home_all_axes() { gcode_G28(true); }
   inline void gcode_G33() {
 
     const int8_t probe_points = parser.intval('P', DELTA_CALIBRATION_DEFAULT_POINTS);
-    if (!WITHIN(probe_points, 0, 10)) {
-      SERIAL_PROTOCOLLNPGM("?(P)oints is implausible (0-10).");
+    if (!WITHIN(probe_points, -2, 10)) {
+      SERIAL_PROTOCOLLNPGM("?(P)oints is implausible (-2 to 10).");
       return;
     }
 
@@ -6258,7 +6276,8 @@ void home_all_axes() { gcode_G28(true); }
                _tower_results       = (_4p_calibration && towers_set) || probe_points >= 3,
                _opposite_results    = (_4p_calibration && !towers_set) || probe_points >= 3,
                _endstop_results     = probe_points != 1 && probe_points != -1 && probe_points != 0,
-               _angle_results       = probe_points >= 3  && towers_set;
+               _angle_results       = probe_points >= 3 && towers_set,
+               _cal_bedlevel        = probe_points == -2; // GbR : DC-UCR
     static const char save_message[] PROGMEM = "Save with M500 and/or copy to Configuration.h";
     int8_t iterations = 0;
     float test_precision,
@@ -6305,7 +6324,114 @@ void home_all_axes() { gcode_G28(true); }
 
     ac_setup(!_0p_calibration && !_1p_calibration);
 
+    if(_cal_bedlevel) delta_height = delta_height + 5; // GbR : DC-UCR
+
     if (!_0p_calibration) ac_home();
+    
+    // GbR: Procedura di calibrazione e bedlevel unificata per stampanti Deltacomb
+    //      DC-UCR : Deltacomb Unified Calibration Routine
+    if(_cal_bedlevel) {
+      // Probe key bed point
+      float z_at_pt[NPP + 1] = { 0.0 };      
+      probe_calibration_points(z_at_pt, probe_points, !towers_set, stow_after_each);
+      delta_height = delta_height - 5;
+
+      // Reset grid to 0.0 or "not probed". (Also disables ABL)
+      reset_bed_level();
+      
+      int16_t constexpr abl_points = GRID_MAX_POINTS;
+      static int16_t abl_probe_index;
+      static uint8_t xCount;
+      static  int8_t yCount;
+
+      // Setup the lattice grid data
+      float xGridSpacing = (RIGHT_PROBE_BED_POSITION - LEFT_PROBE_BED_POSITION) / (GRID_MAX_POINTS_X - 1);
+      float yGridSpacing = (BACK_PROBE_BED_POSITION - FRONT_PROBE_BED_POSITION) / (GRID_MAX_POINTS_Y - 1);
+
+      bilinear_grid_spacing[X_AXIS] = xGridSpacing;
+      bilinear_grid_spacing[Y_AXIS] = yGridSpacing;
+      bilinear_start[X_AXIS] = LEFT_PROBE_BED_POSITION;
+      bilinear_start[Y_AXIS] = FRONT_PROBE_BED_POSITION;
+
+      static float xProbe, yProbe, measured_z, rr, qq;
+      
+      abl_probe_index = 0;
+
+      // Create the deviation map
+      while (abl_probe_index < abl_points) {
+
+
+        // Set xCount, yCount based on abl_probe_index, with zig-zag
+        xCount = abl_probe_index / GRID_MAX_POINTS_Y;
+        yCount = abl_probe_index - (xCount * GRID_MAX_POINTS_Y);
+
+        const float xBase = xCount * xGridSpacing + LEFT_PROBE_BED_POSITION,
+                    yBase = yCount * yGridSpacing + FRONT_PROBE_BED_POSITION;
+
+        xProbe = FLOOR(xBase + (xBase < 0 ? 0 : 0.5));
+        yProbe = FLOOR(yBase + (yBase < 0 ? 0 : 0.5));
+
+        rr = sqrt(xProbe * xProbe + yProbe * yProbe);
+        qq = atan(yProbe / xProbe);
+
+        int quad;      
+        
+        if(xProbe<0) qq = 3.14 + qq;
+        else if(yProbe<0) qq = 6.28 + qq;
+        
+        //Sezione CA
+        if(qq >= 1.5708 && qq < 3.6652) {
+          quad = _CA;
+          qq = qq - 1.5708;
+        }
+        
+        //Sezione AB
+        else if(qq >= 3.6652 && qq < 5.7596) {
+          quad = _AB;
+          qq = qq - 3.6652;
+        }
+        
+        //Sezione BC
+        else {
+          quad = _BC;
+          if(qq < 2) qq = qq + 0.5239;
+          else qq = qq -5.7596;
+        }
+        
+        if(xProbe == 0 && yProbe == 0) measured_z = 0;
+        else measured_z = (-cos((qq) * 3) + 1) / 2 * (z_at_pt[quad] - 5);
+        measured_z = measured_z * rr / delta_calibration_radius;
+
+        z_values[xCount][yCount] = measured_z;
+
+        /*SERIAL_PROTOCOL_F(quad, 10);
+        SERIAL_PROTOCOLPGM(" - ");
+        SERIAL_PROTOCOL_F(z_at_pt[quad], 10);
+        SERIAL_PROTOCOLPGM(" - ");
+        SERIAL_PROTOCOL_F(xCount, 10);
+        SERIAL_PROTOCOLPGM("x");
+        SERIAL_PROTOCOL_F(yCount, 10);
+        SERIAL_PROTOCOLPGM(" > ");
+        SERIAL_PROTOCOL_F(xProbe, 10);
+        SERIAL_PROTOCOLPGM(",");
+        SERIAL_PROTOCOL_F(yProbe, 10);
+        SERIAL_PROTOCOLPGM(" > ");
+        SERIAL_PROTOCOL_F(rr, 10);
+        SERIAL_PROTOCOLPGM(",");
+        SERIAL_PROTOCOL_F(qq, 10);
+        SERIAL_PROTOCOLPGM(" -- Ofs: ");
+        SERIAL_PROTOCOL_F(measured_z, 10);
+        SERIAL_EOL();*/
+
+        ++abl_probe_index;
+      }
+      
+      print_bilinear_leveling_grid();
+      refresh_bed_level();
+      ac_home();
+      lcd_setstatusPGM(PSTR("Operaz. Completata"));
+      return AC_CLEANUP();
+    } // GbR: Rnd DC-UCR
 
     do { // start iterations
 
@@ -7089,7 +7215,7 @@ inline void gcode_M17() {
     planner.synchronize();
   }
 
-  static float resume_position[XYZE];
+  float resume_position[XYZE];
   int8_t did_pause_print = 0;
 
   #if HAS_BUZZER
@@ -7388,7 +7514,7 @@ inline void gcode_M17() {
 
     // Park the nozzle by moving up by z_lift and then moving to (x_pos, y_pos)
     if (!axis_unhomed_error())
-      Nozzle::park(1, park_point);
+      Nozzle::park(3, park_point); // GbR: Modificato per eseguire il parcheggio in modo progressivo
 
     // Unload the filament
     if (unload_length)
@@ -7396,7 +7522,7 @@ inline void gcode_M17() {
 
     // Save Job Recovery
     #if ENABLED(POWER_LOSS_RECOVERY)
-      save_job_recovery_info(true);
+      job_recovery_save(true);
     #endif
 
     return true;
@@ -7543,6 +7669,9 @@ inline void gcode_M17() {
     // If resume_position is negative
     if (resume_position[E_CART] < 0) do_pause_e_move(resume_position[E_CART], PAUSE_PARK_RETRACT_FEEDRATE);
 
+   // GbR: Set Z_AXIS to 5mm above the saved position
+    do_blocking_move_to_z(MIN(resume_position[Z_AXIS] + 5, delta_height), NOZZLE_PARK_Z_FEEDRATE);
+
     // Move XY to starting position, then Z
     do_blocking_move_to_xy(resume_position[X_AXIS], resume_position[Y_AXIS], NOZZLE_PARK_XY_FEEDRATE);
 
@@ -7603,12 +7732,27 @@ inline void gcode_M17() {
    * M23: Open a file
    */
   inline void gcode_M23() {
+    // GbR : Void Job Recovery data
     #if ENABLED(POWER_LOSS_RECOVERY)
-      card.removeJobRecoveryFile();
+      job_recovery_void(); 
     #endif
+
     // Simplify3D includes the size, so zero out all spaces (#7227)
-    for (char *fn = parser.string_arg; *fn; ++fn) if (*fn == ' ') *fn = '\0';
-    card.openFile(parser.string_arg, true);
+    //for (char *fn = parser.string_arg; *fn; ++fn) if (*fn == ' ') *fn = '\0';
+    //card.openFile(parser.string_arg, true);
+
+    byte filenameSlash = 0;
+    // Simplify3D includes the size, so zero out all spaces (#7227)
+    for (char *fn = parser.string_arg; *fn; ++fn){
+      if (*fn == ' ') *fn = '\0';
+      if (*fn == '/') filenameSlash += 1;
+    }
+    if (filenameSlash > 1){
+      card.openFile(&parser.string_arg[1], true);
+    }
+    else {
+      card.openFile(parser.string_arg, true);      
+    }
   }
 
   /**
@@ -9533,7 +9677,8 @@ inline void gcode_M121() { endstops.enable_globally(false); }
     //point_t park_point = NOZZLE_PARK_POINT;
 
     // Deltacomb Park Point
-    point_t park_point = { 0, Y_MAX_POS , delta_height - delta_diagonal_rod + sqrt(pow(delta_diagonal_rod,2) - pow(delta_calibration_radius,2)) - 3 };
+    //point_t park_point = { 0, Y_MAX_POS , delta_height - delta_diagonal_rod + sqrt(pow(delta_diagonal_rod,2) - pow(delta_calibration_radius,2)) - 3 };
+    point_t park_point = { 0, 0, delta_height };
 
     // Move XY axes to filament change position or given position
     if (parser.seenval('X')) park_point.x = parser.linearval('X');
@@ -10985,6 +11130,12 @@ inline void gcode_M500() {
  */
 inline void gcode_M501() {
   (void)settings.load();
+  #if ENABLED(POWER_LOSS_RECOVERY)
+    job_recovery_dump_data();
+    //job_recovery_void();
+  #endif  
+
+  //print_bilinear_leveling_grid(); // GbR :DC-UCR : Deltacomb Unified Calibration Routine
 }
 
 /**
@@ -11021,7 +11172,7 @@ inline void gcode_M502() {
    * M524: Abort the current SD print job (started with M24)
    */
   inline void gcode_M524() {
-    if (IS_SD_PRINTING()) card.abort_sd_printing = true;
+    if (IS_SD_PRINTING()) card.abort_sd_printing = true;    
   }
 
 #endif // SDSUPPORT
@@ -13576,13 +13727,16 @@ void ok_to_send() {
    * Calculate the highest Z position where the
    * effector has the full range of XY motion.
    */
+
+  // GbR: Corretto A_AXIS con C_AXIS perchè questa funzione non pescava l'asse
+  //      corretto per fare il calcolo
   float delta_safe_distance_from_top() {
     float cartesian[XYZ] = { 0, 0, 0 };
     inverse_kinematics(cartesian);
-    const float centered_extent = delta[A_AXIS];
+    const float centered_extent = delta[C_AXIS];
     cartesian[Y_AXIS] = DELTA_PRINTABLE_RADIUS;
     inverse_kinematics(cartesian);
-    return ABS(centered_extent - delta[A_AXIS]);
+    return ABS(delta[C_AXIS] - centered_extent);
   }
 
   /**
@@ -15499,7 +15653,7 @@ void loop() {
       #endif
       wait_for_heatup = false;
       #if ENABLED(POWER_LOSS_RECOVERY)
-        card.removeJobRecoveryFile();
+        job_recovery_void(); // GbR : POWERLOSS TO EEPROM
       #endif
     }
 
@@ -15541,8 +15695,8 @@ void loop() {
       else {
         process_next_command();
         #if ENABLED(POWER_LOSS_RECOVERY)
-          if (card.cardOK && card.sdprinting) save_job_recovery_info(false);
-        #endif
+          if (card.sdprinting) job_recovery_save(false);
+        #endif 
       }
 
     #else

@@ -238,15 +238,19 @@
  * the fan will turn on when any selected extruder is above the threshold.
  */
 
+// GbR: determina il pin per la ventolina di raffreddamento degli hotend in
+//      base alla configurazione della stampante
 #if MOTHERBOARD == BOARD_RAMPS_14_EFF
   #define E0_AUTO_FAN_PIN 8
+  #define E1_AUTO_FAN_PIN 8 // GbR: Usa lo stesso pin per entrambi i gli hotend
 #elif ENABLED(DC_RAMPS_19V_SUPPLY)
   #define E0_AUTO_FAN_PIN 5
+  #define E1_AUTO_FAN_PIN 5
 #else
   #define E0_AUTO_FAN_PIN -1
+  #define E1_AUTO_FAN_PIN -1
 #endif 
 
-#define E1_AUTO_FAN_PIN -1
 #define E2_AUTO_FAN_PIN -1
 #define E3_AUTO_FAN_PIN -1
 #define E4_AUTO_FAN_PIN -1
@@ -566,7 +570,10 @@
  * LED Control Menu
  * Enable this feature to add LED Control to the LCD menu
  */
-//#define LED_CONTROL_MENU
+#if ENABLED(MINIPANEL) // GbR: Abilitato quando viene usato il Minipanel FYSETC
+  #define LED_CONTROL_MENU
+#endif
+
 #if ENABLED(LED_CONTROL_MENU)
   #define LED_COLOR_PRESETS                 // Enable the Preset Color menu option
   #if ENABLED(LED_COLOR_PRESETS)
@@ -575,7 +582,7 @@
     #define LED_USER_PRESET_BLUE         0  // User defined BLUE value
     #define LED_USER_PRESET_WHITE      255  // User defined WHITE value
     #define LED_USER_PRESET_BRIGHTNESS 255  // User defined intensity
-    //#define LED_USER_PRESET_STARTUP       // Have the printer display the user preset color on startup
+    #define LED_USER_PRESET_STARTUP       // Have the printer display the user preset color on startup
   #endif
 #endif // LED_CONTROL_MENU
 
@@ -635,7 +642,7 @@
    *  - SDSORT_CACHE_NAMES will retain the sorted file listing in RAM. (Expensive!)
    *  - SDSORT_DYNAMIC_RAM only uses RAM when the SD menu is visible. (Use with caution!)
    */
-  #define SDCARD_SORT_ALPHA
+  //#define SDCARD_SORT_ALPHA
 
   // SD Card Sorting options
   #if ENABLED(SDCARD_SORT_ALPHA)
@@ -757,7 +764,7 @@
  *
  * Warning: Does not respect endstops!
  */
-//#define BABYSTEPPING
+#define BABYSTEPPING
 #if ENABLED(BABYSTEPPING)
   //#define BABYSTEP_XY              // Also enable X/Y Babystepping. Not supported on DELTA!
   #define BABYSTEP_INVERT_Z false    // Change if Z babysteps should go the other way
@@ -994,7 +1001,7 @@
 #define ADVANCED_PAUSE_FEATURE
 #if ENABLED(ADVANCED_PAUSE_FEATURE)
   // Park position for filament change as { X, Y, Z }
-  #define FILAMENT_CHANGE_PARK_POINT  { 0, Y_MIN_POS , delta_height };
+  #define FILAMENT_CHANGE_PARK_POINT  { 0, Y_MIN_POS , Z_MAX_POS };
 
   #define FILAMENT_CHANGE_UNLOAD_FEEDRATE     50  // (mm/s) Unload filament feedrate. This can be pretty fast.
   #define FILAMENT_CHANGE_UNLOAD_ACCEL        50  // (mm/s^2) Lower acceleration may allow a faster feedrate.

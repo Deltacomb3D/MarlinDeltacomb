@@ -868,61 +868,27 @@ void lcd_quick_feedback(const bool clear_buttons) {
 
   #if ENABLED(POWER_LOSS_RECOVERY)
 
-    static void lcd_power_loss_recovery_resume() {
-      check_print_job_recovery();
-      char cmd[20];
+    static void lcd_job_recovery_resume() {
+      if(!job_recovery_check()) return;
 
       // Return to status now
       lcd_return_to_status();
 
-      // Turn leveling off and home
-      enqueue_and_echo_commands_P(PSTR("M420 S0"));
-      enqueue_and_echo_commands_P(PSTR("G28 R0"
-        #if ENABLED(MARLIN_DEV_MODE)
-          " S"
-        #elif !IS_KINEMATIC
-          " X Y"
-        #endif
-      ));
-
-      #if HAS_HEATED_BED
-        const int16_t bt = job_recovery_info.target_temperature_bed;
-        if (bt) {
-          // Restore the bed temperature
-          sprintf_P(cmd, PSTR("M190 S%i"), bt);
-          enqueue_and_echo_command(cmd);
-        }
-      #endif
-
-      // Restore all hotend temperatures
-      HOTEND_LOOP() {
-        const int16_t et = job_recovery_info.target_temperature[e];
-        if (et) {
-          #if HOTENDS > 1
-            sprintf_P(cmd, PSTR("T%i"), e);
-            enqueue_and_echo_command(cmd);
-          #endif
-          sprintf_P(cmd, PSTR("M109 S%i"), et);
-          enqueue_and_echo_command(cmd);
-        }
-      }
-
-      #if HOTENDS > 1
-        sprintf_P(cmd, PSTR("T%i"), job_recovery_info.active_hotend);
-        enqueue_and_echo_command(cmd);
-      #endif
-
-      // Restore print cooling fan speeds
-      for (uint8_t i = 0; i < FAN_COUNT; i++) {
-        int16_t f = job_recovery_info.fanSpeeds[i];
-        if (f) {
-          sprintf_P(cmd, PSTR("M106 P%i S%i"), i, f);
-          enqueue_and_echo_command(cmd);
-        }
-      }
-
       // Start draining the job recovery command queue
       job_recovery_phase = JOB_RECOVERY_YES;
+    }
+
+    // Specific routine if the head is stuck on the printed piece
+    void lcd_job_recovery_confirm() {
+      lcd_job_recovery_resume();
+    }
+
+    void lcd_job_recovery_options_menu() {
+      START_MENU();      
+      STATIC_ITEM(MSG_JOB_RECOVERY_CONFIRM, false, false);
+      MENU_ITEM(function, MSG_YES, lcd_job_recovery_confirm);
+      MENU_BACK(MSG_NO);
+      END_MENU();
     }
 
   #endif // POWER_LOSS_RECOVERY
@@ -1155,14 +1121,9 @@ void lcd_quick_feedback(const bool clear_buttons) {
           MENU_ITEM(gcode, MSG_CNG_SDCARD, PSTR("M21"));  // SD-card changed by user
         #endif
 
-        #if ENABLED(POWER_LOSS_RECOVERY)
-          if(card.jobRecoverFileExists()) {
-            card.openJobRecoveryFile(true);
-            card.loadJobRecoveryInfo();
-            card.closeJobRecoveryFile();
-            if (job_recovery_info.valid_head && job_recovery_info.valid_head == job_recovery_info.valid_foot) {
-              MENU_ITEM(function, MSG_RESUME_PRINT, lcd_power_loss_recovery_resume);
-            }
+        #if ENABLED(POWER_LOSS_RECOVERY)          
+          if (job_recovery_info.valid_head && job_recovery_info.valid_head == job_recovery_info.valid_foot) {
+            MENU_ITEM(submenu, MSG_RESUME_PRINT, lcd_job_recovery_options_menu);
           }
         #endif
       }
@@ -1745,9 +1706,9 @@ void lcd_quick_feedback(const bool clear_buttons) {
         #endif
       #elif HOTENDS > 1
         #if HAS_HEATED_BED
-          MENU_ITEM(function, MSG_PREHEAT_1_N MSG_H1, lcd_preheat_m1_e0);
+          //MENU_ITEM(function, MSG_PREHEAT_1_N MSG_H1, lcd_preheat_m1_e0); // GbR : Simplified preheat menu
           MENU_ITEM(function, MSG_PREHEAT_1_END " " MSG_E1, lcd_preheat_m1_e0_only);
-          MENU_ITEM(function, MSG_PREHEAT_1_N MSG_H2, lcd_preheat_m1_e1);
+          //MENU_ITEM(function, MSG_PREHEAT_1_N MSG_H2, lcd_preheat_m1_e1); // GbR : Simplified preheat menu
           MENU_ITEM(function, MSG_PREHEAT_1_END " " MSG_E2, lcd_preheat_m1_e1_only);
         #else
           MENU_ITEM(function, MSG_PREHEAT_1_N MSG_H1, lcd_preheat_m1_e0_only);
@@ -1777,7 +1738,7 @@ void lcd_quick_feedback(const bool clear_buttons) {
             #endif // HOTENDS > 4
           #endif // HOTENDS > 3
         #endif // HOTENDS > 2
-        MENU_ITEM(function, MSG_PREHEAT_1_ALL, lcd_preheat_m1_all);
+        //MENU_ITEM(function, MSG_PREHEAT_1_ALL, lcd_preheat_m1_all);
       #endif // HOTENDS > 1
       #if HAS_HEATED_BED
         MENU_ITEM(function, MSG_PREHEAT_1_BEDONLY, lcd_preheat_m1_bedonly);
@@ -2745,7 +2706,8 @@ void lcd_quick_feedback(const bool clear_buttons) {
     //
     // Level Bed
     //
-    #if ENABLED(AUTO_BED_LEVELING_UBL)
+    //GbR : Rimossto il menù ABL in quanto l'ABL è integrato nell DC-UCR
+    /* #if ENABLED(AUTO_BED_LEVELING_UBL)
 
       MENU_ITEM(submenu, MSG_UBL_LEVEL_BED, _lcd_ubl_level_bed);
 
@@ -2754,7 +2716,7 @@ void lcd_quick_feedback(const bool clear_buttons) {
       #if ENABLED(PROBE_MANUALLY)
         if (!g29_in_progress)
       #endif
-          MENU_ITEM(submenu, MSG_BED_LEVELING, lcd_bed_leveling);
+        MENU_ITEM(submenu, MSG_BED_LEVELING, lcd_bed_leveling);
 
     #elif HAS_LEVELING && DISABLED(SLIM_LCD_MENUS)
 
@@ -2774,7 +2736,7 @@ void lcd_quick_feedback(const bool clear_buttons) {
     #if ENABLED(LEVEL_BED_CORNERS) && DISABLED(LCD_BED_LEVELING)
       if (all_axes_homed())
         MENU_ITEM(function, MSG_LEVEL_CORNERS, _lcd_level_bed_corners);
-    #endif
+    #endif*/
 
     #if HAS_M206_COMMAND && DISABLED(SLIM_LCD_MENUS)
       //
@@ -2878,7 +2840,13 @@ void lcd_quick_feedback(const bool clear_buttons) {
   #if ENABLED(DELTA_AUTO_CALIBRATION)
 
     float lcd_probe_pt(const float &rx, const float &ry) {
-      _man_probe_pt(rx, ry);
+    // GbR : DC-UCR, la probe è allineata al nozzle primario
+    #if ENABLED(SWITCHING_NOZZLE)
+      _man_probe_pt(rx + HOTEND_OFFSET / 2, ry); //GbR
+    #else
+      _man_probe_pt(rx, ry); //GbR
+    #endif
+      
       KEEPALIVE_STATE(PAUSED_FOR_USER);
       defer_return_to_status = true;
       wait_for_user = true;
@@ -2921,6 +2889,16 @@ void lcd_quick_feedback(const bool clear_buttons) {
       recalc_delta_settings();
     }
 
+    // GbR: Procedura di calibrazione e bedlevel unificata per stampanti Deltacomb
+    //      DC-UCR : Deltacomb Unified Calibration Routine
+    void _deltacomb_calibration_routine() {
+      enqueue_and_echo_commands_P(PSTR("M665 H" STRINGIFY(DELTA_HEIGHT)));
+      enqueue_and_echo_commands_P(PSTR("M666 X0 Y0 Z0"));
+      enqueue_and_echo_commands_P(PSTR("G33 P" STRINGIFY(DELTA_CALIBRATION_DEFAULT_POINTS)));
+      enqueue_and_echo_commands_P(PSTR("G33 P-2"));
+      enqueue_and_echo_commands_P(PSTR("M500"));
+    }
+
     void lcd_delta_settings() {
       START_MENU();
       MENU_BACK(MSG_BACK);
@@ -2936,23 +2914,43 @@ void lcd_quick_feedback(const bool clear_buttons) {
       END_MENU();
     }
 
+  #if HOTENDS > 1 // GbR: Menù per la regolazione degli offset tra ugelli
+    void menu_tool_offsets() {
+
+      auto _recalc_offsets = []{
+        if (active_extruder && all_axes_known()) {  // For the 2nd extruder re-home so the next tool-change gets the new offsets.          
+          enqueue_and_echo_commands_P(PSTR("G28")); // In future, we can babystep the 2nd extruder (if active), making homing unnecessary.
+          active_extruder = 0;
+        }
+        enqueue_and_echo_commands_P(PSTR("M500"));
+      };
+
+      START_MENU();
+      MENU_BACK(MSG_BACK);
+      MENU_ITEM_EDIT_CALLBACK(float52sign, MSG_HOTEND_OFFSET_X, &hotend_offset[A_AXIS][1], -99.0, 99.0, _recalc_offsets);
+      MENU_ITEM_EDIT_CALLBACK(float52sign, MSG_HOTEND_OFFSET_Y, &hotend_offset[B_AXIS][1], -99.0, 99.0, _recalc_offsets);
+      MENU_ITEM_EDIT_CALLBACK(float52sign, MSG_HOTEND_OFFSET_Z, &hotend_offset[C_AXIS][1], Z_PROBE_LOW_POINT, 10.0, _recalc_offsets);
+      END_MENU();
+    }
+  #endif
+
     void lcd_delta_calibrate_menu() {
       START_MENU();
       MENU_BACK(MSG_BACK);
       #if ENABLED(DELTA_AUTO_CALIBRATION)
-        MENU_ITEM(gcode, MSG_DELTA_AUTO_CALIBRATE, PSTR("M665 H" STRINGIFY(DELTA_HEIGHT) "\nM666 X0 Y0 Z0\nG33 P" STRINGIFY(DELTA_CALIBRATION_DEFAULT_POINTS) "\nM500"));
+        MENU_ITEM(function, MSG_DELTA_AUTO_CALIBRATE, _deltacomb_calibration_routine); // GbR: Deltacomb  
         MENU_ITEM(gcode, MSG_DELTA_HEIGHT_CALIBRATE, PSTR("M665 H" STRINGIFY(DELTA_HEIGHT) "\nG33 P1\nM500"));
         //#if ENABLED(EEPROM_SETTINGS)
         //  MENU_ITEM(function, MSG_STORE_EEPROM, lcd_store_settings);
         //  MENU_ITEM(function, MSG_LOAD_EEPROM, lcd_load_settings);
         //#endif
       #endif
-      #if ENABLED(LCD_BED_LEVELING)
+      /*#if ENABLED(LCD_BED_LEVELING) // GbR: Rimosso questo menù perchè superfluo
         #if ENABLED(PROBE_MANUALLY)
           if (!g29_in_progress)
         #endif
             MENU_ITEM(submenu, MSG_BED_LEVELING, lcd_bed_leveling);
-      #endif
+      #endif*/
       MENU_ITEM(submenu, MSG_DELTA_SETTINGS, lcd_delta_settings);
       #if ENABLED(DELTA_CALIBRATION_MENU)
         MENU_ITEM(submenu, MSG_AUTO_HOME, _lcd_delta_calibrate_home);
@@ -2963,6 +2961,11 @@ void lcd_quick_feedback(const bool clear_buttons) {
           MENU_ITEM(submenu, MSG_DELTA_CALIBRATE_CENTER, _goto_center);
         }
       #endif
+      #if HOTENDS > 1 // GbR: Inserito il menù per la regolazione degli offset
+          MENU_ITEM(submenu, MSG_OFFSETS_MENU, menu_tool_offsets);
+      #endif
+
+
       END_MENU();
     }
 
@@ -4244,9 +4247,10 @@ void lcd_quick_feedback(const bool clear_buttons) {
       if (use_click()) { return lcd_goto_previous_menu(); }
       START_SCREEN();
       STATIC_ITEM(MSG_MARLIN, true, true);                             // Marlin
-      STATIC_ITEM(SHORT_BUILD_VERSION, true);                          // x.x.x-Branch
-      STATIC_ITEM(STRING_DISTRIBUTION_DATE, true);                     // YYYY-MM-DD HH:MM
       STATIC_ITEM(MACHINE_NAME, true);                                 // My3DPrinter
+      STATIC_ITEM(SHORT_BUILD_VERSION, true);                          // x.x.x-Branch
+      STATIC_ITEM("Build " __DATE__);
+      //STATIC_ITEM(STRING_DISTRIBUTION_DATE, true);                     // YYYY-MM-DD HH:MM
       STATIC_ITEM(WEBSITE_URL, true);                                  // www.my3dprinter.com
       STATIC_ITEM(MSG_INFO_EXTRUDERS ": " STRINGIFY(EXTRUDERS), true); // Extruders: 2
       #if ENABLED(AUTO_BED_LEVELING_3POINT)
@@ -4391,8 +4395,9 @@ void lcd_quick_feedback(const bool clear_buttons) {
       _change_filament_temp_mode = mode;
       _change_filament_temp_extruder = extruder;
       START_MENU();
-      if (LCD_HEIGHT >= 4) STATIC_ITEM_P(change_filament_header(mode), true, true);
-      MENU_BACK(MSG_FILAMENTCHANGE);
+      // GbR : Rimosso il titolo per questo sotto menù
+      //if (LCD_HEIGHT >= 4) STATIC_ITEM_P(change_filament_header(mode), true, true); // GbR: Rimosso intestazione perchè non mi piace
+      MENU_BACK(MSG_BACK);
       MENU_ITEM(submenu, MSG_PREHEAT_1, _lcd_change_filament_temp_1_menu);
       MENU_ITEM(submenu, MSG_PREHEAT_2, _lcd_change_filament_temp_2_menu);
       END_MENU();
@@ -4435,6 +4440,8 @@ void lcd_quick_feedback(const bool clear_buttons) {
         MENU_BACK(MSG_BACK);
 
         // Change filament
+        // GbR: Aggiunto il messaggio abbreviato MSG_FILAMENTCHANGE_2 nelle 
+        //      versioni a doppio ugello perchè andava fuori display
         #if E_STEPPERS == 1
           PGM_P msg0 = PSTR(MSG_FILAMENTCHANGE);
           if (thermalManager.targetTooColdToExtrude(active_extruder))
@@ -4442,8 +4449,8 @@ void lcd_quick_feedback(const bool clear_buttons) {
           else
             MENU_ITEM_P(gcode, msg0, PSTR("M600 B0"));
         #else
-          PGM_P msg0 = PSTR(MSG_FILAMENTCHANGE " " MSG_E1);
-          PGM_P msg1 = PSTR(MSG_FILAMENTCHANGE " " MSG_E2);
+          PGM_P msg0 = PSTR(MSG_FILAMENTCHANGE_2 " " MSG_E1);
+          PGM_P msg1 = PSTR(MSG_FILAMENTCHANGE_2 " " MSG_E2);
           if (thermalManager.targetTooColdToExtrude(0))
             MENU_ITEM_P(submenu, msg0, lcd_temp_menu_e0_filament_change);
           else
@@ -4453,19 +4460,19 @@ void lcd_quick_feedback(const bool clear_buttons) {
           else
             MENU_ITEM_P(gcode, msg1, PSTR("M600 B0 T1"));
           #if E_STEPPERS > 2
-            PGM_P msg2 = PSTR(MSG_FILAMENTCHANGE " " MSG_E3);
+            PGM_P msg2 = PSTR(MSG_FILAMENTCHANGE_2 " " MSG_E3);
             if (thermalManager.targetTooColdToExtrude(2))
               MENU_ITEM_P(submenu, msg2, lcd_temp_menu_e2_filament_change);
             else
               MENU_ITEM_P(gcode, msg2, PSTR("M600 B0 T2"));
             #if E_STEPPERS > 3
-              PGM_P msg3 = PSTR(MSG_FILAMENTCHANGE " " MSG_E4);
+              PGM_P msg3 = PSTR(MSG_FILAMENTCHANGE_2 " " MSG_E4);
               if (thermalManager.targetTooColdToExtrude(3))
                 MENU_ITEM_P(submenu, msg3, lcd_temp_menu_e3_filament_change);
               else
                 MENU_ITEM_P(gcode, msg3, PSTR("M600 B0 T3"));
               #if E_STEPPERS > 4
-                PGM_P msg4 = PSTR(MSG_FILAMENTCHANGE " " MSG_E5);
+                PGM_P msg4 = PSTR(MSG_FILAMENTCHANGE_2 " " MSG_E5);
                 if (thermalManager.targetTooColdToExtrude(4))
                   MENU_ITEM_P(submenu, msg4, lcd_temp_menu_e4_filament_change);
                 else

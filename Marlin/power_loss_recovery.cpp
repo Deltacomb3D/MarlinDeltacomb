@@ -31,6 +31,7 @@
 #include "power_loss_recovery.h"
 
 #include "cardreader.h"
+#include "configuration_store.h" // GbR: POWER_LOSS_RECOVERY TO EEPROM
 #include "planner.h"
 #include "printcounter.h"
 #include "serial.h"
@@ -40,13 +41,12 @@
 // Recovery data
 job_recovery_info_t job_recovery_info;
 JobRecoveryPhase job_recovery_phase = JOB_RECOVERY_IDLE;
-uint8_t job_recovery_commands_count; //=0
-char job_recovery_commands[BUFSIZE + APPEND_CMD_COUNT][MAX_CMD_SIZE];
+
 // Extern
 extern uint8_t active_extruder, commands_in_queue, cmd_queue_index_r;
 
 #if ENABLED(DEBUG_POWER_LOSS_RECOVERY)
-  void debug_print_job_recovery(const bool recovery) {
+  void job_recovery_dump_data() {
     SERIAL_PROTOCOLLNPGM("---- Job Recovery Info ----");
     SERIAL_PROTOCOLPAIR("valid_head:", int(job_recovery_info.valid_head));
     SERIAL_PROTOCOLLNPAIR(" valid_foot:", int(job_recovery_info.valid_foot));
@@ -90,10 +90,8 @@ extern uint8_t active_extruder, commands_in_queue, cmd_queue_index_r;
         #endif
         SERIAL_PROTOCOLLNPAIR("cmd_queue_index_r: ", int(job_recovery_info.cmd_queue_index_r));
         SERIAL_PROTOCOLLNPAIR("commands_in_queue: ", int(job_recovery_info.commands_in_queue));
-        if (recovery)
-          for (uint8_t i = 0; i < job_recovery_commands_count; i++) SERIAL_PROTOCOLLNPAIR("> ", job_recovery_commands[i]);
-        else
-          for (uint8_t i = 0; i < job_recovery_info.commands_in_queue; i++) SERIAL_PROTOCOLLNPAIR("> ", job_recovery_info.command_queue[i]);
+        for (uint8_t i = 0; i < job_recovery_info.commands_in_queue; i++)
+          SERIAL_PROTOCOLLNPAIR("> ", job_recovery_info.command_queue[i]);
         SERIAL_PROTOCOLLNPAIR("sd_filename: ", job_recovery_info.sd_filename);
         SERIAL_PROTOCOLLNPAIR("sdpos: ", job_recovery_info.sdpos);
         SERIAL_PROTOCOLLNPAIR("print_job_elapsed: ", job_recovery_info.print_job_elapsed);
@@ -106,117 +104,175 @@ extern uint8_t active_extruder, commands_in_queue, cmd_queue_index_r;
 #endif // DEBUG_POWER_LOSS_RECOVERY
 
 /**
- * Check for Print Job Recovery during setup()
+ * Check for a valid Print Job Recovery
  *
  * If a saved state exists, populate job_recovery_commands with
  * commands to restore the machine state and continue the file.
  */
-void check_print_job_recovery() {
-  memset(&job_recovery_info, 0, sizeof(job_recovery_info));
-  ZERO(job_recovery_commands);
-
+bool job_recovery_check() {
   if (!card.cardOK) card.initsd();
 
   if (card.cardOK) {
+    // Check pointed resume file exists
+    SERIAL_ECHOLNPAIR(" file: ", job_recovery_info.sd_filename);
+  
+    SdFile *curDir;
+    char sd_filename[MAXPATHNAMELENGTH];
+    COPY(sd_filename, job_recovery_info.sd_filename);
+
+    if (sd_filename[0] == '/') sd_filename[0] = ' ';    
+    const char * const fname = card.diveToFile(curDir, sd_filename, false);
+
+    if (!fname) {
+      LCD_ALERTMESSAGEPGM(MSG_SD_FILE_NOT_FOUND);
+      return false;
+    }
 
     #if ENABLED(DEBUG_POWER_LOSS_RECOVERY)
-      SERIAL_PROTOCOLLNPAIR("Init job recovery info. Size: ", int(sizeof(job_recovery_info)));
+      job_recovery_dump_data();
     #endif
 
-    if (card.jobRecoverFileExists()) {
-      card.openJobRecoveryFile(true);
-      card.loadJobRecoveryInfo();
-      card.closeJobRecoveryFile();
-      //card.removeJobRecoveryFile();
-
-      if (job_recovery_info.valid_head && job_recovery_info.valid_head == job_recovery_info.valid_foot) {
-
-        uint8_t ind = 0;
-
-        #if HAS_LEVELING
-          strcpy_P(job_recovery_commands[ind++], PSTR("M420 S0 Z0"));               // Leveling off before G92 or G28
-        #endif
-
-        #if !IS_KINEMATIC
-        strcpy_P(job_recovery_commands[ind++], PSTR("G92.0 Z0"));                   // Ensure Z is equal to 0
-        strcpy_P(job_recovery_commands[ind++], PSTR("G1 Z2"));                      // Raise Z by 2mm (we hope!)
-        strcpy_P(job_recovery_commands[ind++], PSTR("G28 R0"
-          #if ENABLED(MARLIN_DEV_MODE)
-            " S"
-          #else
-            " X Y"                                                                  // Home X and Y for Cartesian
-          #endif
-        ));
-        #endif
-
-        char str_X[16], str_Y[16], str_Z[16], str_E[16];
-
-        #if HAS_LEVELING
-          if (job_recovery_info.fade || job_recovery_info.leveling) {
-            // Restore leveling state before G92 sets Z
-            // This ensures the steppers correspond to the native Z
-            dtostrf(job_recovery_info.fade, 1, 1, str_Z);
-            sprintf_P(job_recovery_commands[ind++], PSTR("M420 S%i Z%s"), int(job_recovery_info.leveling), str_Z);
-          }
-        #endif
-
-        #if !IS_KINEMATIC
-          dtostrf(job_recovery_info.current_position[Z_AXIS] + 2, 1, 3, str_Z);
-        #else
-          dtostrf(job_recovery_info.current_position[X_AXIS] , 1, 3, str_X);
-          dtostrf(job_recovery_info.current_position[Y_AXIS] , 1, 3, str_Y);
-          dtostrf(job_recovery_info.current_position[Z_AXIS] , 1, 3, str_Z);
-        #endif
-
-        dtostrf(job_recovery_info.current_position[E_CART]
-          #if ENABLED(SAVE_EACH_CMD_MODE)
-            - 5
-          #endif
-          , 1, 3, str_E
-        );
-
-        #if IS_KINEMATIC
-          sprintf_P(job_recovery_commands[ind++], PSTR("G1 X%s Y%s Z%s F5000"), str_X, str_Y, str_Z); // Move to Z Position
-        #endif
-
-        sprintf_P(job_recovery_commands[ind++], PSTR("G92.0 Z%s E%s"), str_Z, str_E); // Current Z and E
-
-        // purge a small quantity of filament 
-        strcpy_P(job_recovery_commands[ind++], PSTR("G91"));
-        sprintf_P(job_recovery_commands[ind++], PSTR("G1 E%i"), PAUSE_PARK_RETRACT_LENGTH);
-        strcpy_P(job_recovery_commands[ind++], PSTR("G90"));
-
-        uint8_t r = job_recovery_info.cmd_queue_index_r, c = job_recovery_info.commands_in_queue;
-        while (c--) {
-          // remove "M125" if the job recovery was saved by the pause routine
-          if(strcmp(job_recovery_info.command_queue[r], "M125\0") != 0)
-            strcpy(job_recovery_commands[ind++], job_recovery_info.command_queue[r]);
-          r = (r + 1) % BUFSIZE;
-        }
-
-        if (job_recovery_info.sd_filename[0] == '/') job_recovery_info.sd_filename[0] = ' ';
-        sprintf_P(job_recovery_commands[ind++], PSTR("M23 %s"), job_recovery_info.sd_filename);
-        sprintf_P(job_recovery_commands[ind++], PSTR("M24 S%ld T%ld"), job_recovery_info.sdpos, job_recovery_info.print_job_elapsed);
-
-        job_recovery_commands_count = ind;
-
-        #if ENABLED(DEBUG_POWER_LOSS_RECOVERY)
-          debug_print_job_recovery(true);
-        #endif
-      }
-      else {
-        if (job_recovery_info.valid_head != job_recovery_info.valid_foot)
-          LCD_ALERTMESSAGEPGM("INVALID DATA");
-        memset(&job_recovery_info, 0, sizeof(job_recovery_info));
-      }
+    if (!job_recovery_info.valid_head || job_recovery_info.valid_head != job_recovery_info.valid_foot) {
+      LCD_ALERTMESSAGEPGM("INVALID DATA");
+      memset(&job_recovery_info, 0, sizeof(job_recovery_info));
+      return false;
     }
   }
+
+  else {
+    LCD_ALERTMESSAGEPGM(MSG_NO_CARD);
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Resume the power-loss job from the machine state
+ */
+bool job_recovery_resume(uint8_t index, char * command) {
+
+  if(--index == 0) sprintf_P(command, PSTR("M109 S150"));
+
+  // Leveling off before G92 or G28
+  #if HAS_LEVELING
+    if (--index == 0) strcpy_P(command, PSTR("M420 S0"));
+  #endif
+
+  #if !IS_KINEMATIC
+    // Ensure Z is equal to 0
+    if (--index == 0) strcpy_P(command, PSTR("G92.0 Z0"));
+    // Raise Z by 2mm (we hope!)
+    if (--index == 0) strcpy_P(command, PSTR("G1 Z2"));
+  #endif
+
+  // home
+  if (--index == 0) strcpy_P(command, PSTR("G28 R0"
+    #if ENABLED(MARLIN_DEV_MODE)
+      " S"
+    #endif
+
+    // Home X and Y for Cartesian
+    #if !IS_KINEMATIC
+      " X Y"
+    #endif
+  ));
+
+  #if HAS_HEATED_BED
+    if (--index == 0) {
+      const int16_t bt = job_recovery_info.target_temperature_bed;
+      // Restore the bed temperature      
+      if (bt) sprintf_P(command, PSTR("M190 S%i"), bt);        
+    }
+  #endif
+
+  // Restore all hotend temperatures
+  HOTEND_LOOP() {
+    const int16_t et = job_recovery_info.target_temperature[e];
+    if (et) {
+      #if HOTENDS > 1
+        if (--index == 0) sprintf_P(command, PSTR("T%i"), e);
+      #endif
+      if (--index == 0) sprintf_P(command, PSTR("M109 S%i"), et);
+    }
+  }
+
+  #if HOTENDS > 1
+    if (--index == 0) sprintf_P(command, PSTR("T%i"), job_recovery_info.active_hotend);
+  #endif
+
+  // Restore print cooling fan speeds
+  for (uint8_t i = 0; i < FAN_COUNT; i++) {
+    int16_t f = job_recovery_info.fanSpeeds[i];
+    if (f) {
+      if (--index == 0) sprintf_P(command, PSTR("M106 P%i S%i"), i, f);
+    }
+  }
+
+  char str_X[16], str_Y[16], str_Z[16], str_E[16];
+
+  #if HAS_LEVELING
+    if ((job_recovery_info.fade || job_recovery_info.leveling)) {
+      // Restore leveling state before G92 sets Z
+      // This ensures the steppers correspond to the native Z
+      dtostrf(job_recovery_info.fade, 1, 1, str_Z);
+      if (--index == 0) sprintf_P(command, PSTR("M420 S%i Z%s"), int(job_recovery_info.leveling), str_Z);
+    }
+  #endif
+
+  #if !IS_KINEMATIC
+    dtostrf(job_recovery_info.current_position[Z_AXIS] + 2, 1, 3, str_Z);
+  #else
+    dtostrf(job_recovery_info.current_position[X_AXIS] , 1, 3, str_X);
+    dtostrf(job_recovery_info.current_position[Y_AXIS] , 1, 3, str_Y);
+    dtostrf(job_recovery_info.current_position[Z_AXIS] , 1, 3, str_Z);
+  #endif
+
+  dtostrf(job_recovery_info.current_position[E_CART] - PAUSE_PARK_RETRACT_LENGTH
+    #if ENABLED(SAVE_EACH_CMD_MODE)
+      - 5
+    #endif
+    , 1, 3, str_E
+  );
+
+  #if IS_KINEMATIC
+    if (--index == 0) sprintf_P(command, PSTR("G1 X%s Y%s Z%s F5000"), str_X, str_Y, str_Z); // Move to Z Position
+  #endif
+
+  if (--index == 0) sprintf_P(command, PSTR("G92.0 Z%s E%s"), str_Z, str_E ); // Current Z and E
+
+  //if (--index == 0) strcpy_P(command, PSTR("G91"));
+
+  // purge a small quantity of filament 
+  //if (--index == 0) sprintf_P(command, PSTR("G1 E%i"), PAUSE_PARK_RETRACT_LENGTH);
+  if (--index == 0) strcpy_P(command, PSTR("G90"));
+
+  uint8_t r = job_recovery_info.cmd_queue_index_r, c = job_recovery_info.commands_in_queue;
+  while (c--) {
+    // remove "M125" if the job recovery was saved by the pause routine
+    if(strcmp(job_recovery_info.command_queue[r], "M125\0") != 0) {
+      if (--index == 0) strcpy(command, job_recovery_info.command_queue[r]);
+    }
+    r = (r + 1) % BUFSIZE;
+  }
+
+  //if (job_recovery_info.sd_filename[0] == '/') job_recovery_info.sd_filename[0] = ' ';
+  if (--index == 0) sprintf_P(command, PSTR("M23 %s"), job_recovery_info.sd_filename);
+  if (--index == 0) sprintf_P(command, PSTR("M24 S%ld T%ld"), job_recovery_info.sdpos, job_recovery_info.print_job_elapsed);
+
+  // After resuming, void the powerloss data and stop sending resume commands
+  if (--index == 0) {
+    job_recovery_void();
+    return true;
+  }
+
+  return false;
 }
 
 /**
  * Save the current machine state to the power-loss recovery file
  */
-void save_job_recovery_info(const bool force) {
+void job_recovery_save(const bool force) {
   #if SAVE_INFO_INTERVAL_MS > 0
     static millis_t next_save_ms; // = 0;  // Init on reset
     millis_t ms = millis();
@@ -293,24 +349,31 @@ void save_job_recovery_info(const bool force) {
     // Elapsed print job time
     job_recovery_info.print_job_elapsed = print_job_timer.duration();
 
-    // SD file and position
-    if(job_recovery_info.sd_filename[0] == 0)
+    // If current job war resumed, dont touch the file name (avoid M23 bug)
+    if(job_recovery_phase != JOB_RECOVERY_DONE)
       card.getAbsFilename(job_recovery_info.sd_filename);
+    
+    // SD file position
     job_recovery_info.sdpos = card.getIndex();    
 
-    #if ENABLED(DEBUG_POWER_LOSS_RECOVERY)
-      SERIAL_PROTOCOLLNPGM("Saving...");
-      debug_print_job_recovery(false);
-    #endif
-
-    card.openJobRecoveryFile(false);
-    (void)card.saveJobRecoveryInfo();
+    // Save to eeprom
+    (void)settings.save_job_recovery_data();
 
     // If power-loss pin was triggered, write just once then kill
     #if PIN_EXISTS(POWER_LOSS)
       if (READ(POWER_LOSS_PIN) == POWER_LOSS_STATE) kill(PSTR(MSG_POWER_LOSS_RECOVERY));
     #endif
   }
+}
+
+void job_recovery_void() {
+  #if ENABLED(DEBUG_POWER_LOSS_RECOVERY)
+    SERIAL_PROTOCOLLNPGM("[Job Recovery] Void data");
+  #endif
+  job_recovery_info.valid_foot = 100;
+  job_recovery_info.valid_head = 0;
+  (void)settings.save_job_recovery_data();
+  
 }
 
 #endif // POWER_LOSS_RECOVERY

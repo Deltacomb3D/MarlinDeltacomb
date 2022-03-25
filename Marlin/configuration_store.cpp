@@ -81,6 +81,11 @@
   extern bool bltouch_last_written_mode;
 #endif
 
+// GbR: POWER_LOSS_RECOVERY 2 EEPROM
+#if ENABLED(POWER_LOSS_RECOVERY)
+  #include "power_loss_recovery.h"
+#endif
+
 #pragma pack(push, 1) // No padding between variables
 
 typedef struct PID { float Kp, Ki, Kd; } PID;
@@ -1639,7 +1644,12 @@ void MarlinSettings::postprocess() {
         #endif
       }
 
-      if (!validating && !eeprom_error) postprocess();
+      if (!validating && !eeprom_error) {
+        postprocess();
+        #if ENABLED(POWER_LOSS_RECOVERY)
+          load_job_recovery_data(); // GbR
+        #endif
+      }
 
       #if ENABLED(AUTO_BED_LEVELING_UBL)
         if (!validating) {
@@ -2824,3 +2834,44 @@ void MarlinSettings::reset() {
   }
 
 #endif // !DISABLE_M503
+
+#if ENABLED(POWER_LOSS_RECOVERY)
+  void MarlinSettings::save_job_recovery_data() {
+    #if ENABLED(DEBUG_POWER_LOSS_RECOVERY)
+      SERIAL_PROTOCOLLNPGM("[Job Recovery] Saving ...");
+    #endif
+
+    uint16_t working_crc = 0;
+
+    int eeprom_start = EEPROM_OFFSET + datasize();
+    int eeprom_index = eeprom_start;
+
+    EEPROM_WRITE(job_recovery_info);
+
+    const uint16_t eeprom_size = eeprom_index - eeprom_start;
+
+    // Report storage size
+    #if ENABLED(EEPROM_CHITCHAT)
+      SERIAL_ECHO_START();
+      SERIAL_ECHOPAIR("Job Recovery data Stored (", eeprom_size);
+      SERIAL_ECHOPAIR(" bytes; crc ", (uint32_t)working_crc);
+      SERIAL_ECHOLNPGM(")");
+    #endif
+  }
+
+  void MarlinSettings::load_job_recovery_data() {
+    uint16_t working_crc = 0;
+
+    int eeprom_start = EEPROM_OFFSET + datasize();
+    int eeprom_index = eeprom_start;
+
+    EEPROM_READ(job_recovery_info);  
+
+    #if ENABLED(EEPROM_CHITCHAT)
+      SERIAL_ECHO_START();
+      SERIAL_ECHOPAIR("Job Recovery data retrieved (", eeprom_index - eeprom_start);
+      SERIAL_ECHOPAIR(" bytes; crc ", (uint32_t)working_crc);
+      SERIAL_ECHOLNPGM(")");
+    #endif
+  }
+#endif

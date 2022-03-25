@@ -173,11 +173,24 @@
         break;
 
       case 2: // Raise by Z-park height
-        do_blocking_move_to_z(MIN(current_position[Z_AXIS] + park.z, Z_MAX_POS), fr_z);
+        do_blocking_move_to_z(MIN(current_position[Z_AXIS] + park.z, delta_height), fr_z);
+        break;
+
+      case 3: // GbR: Porta la testina in posizione di parcheggio in modo progressivo
+        // GbR: Alza di 5mm la testina
+        do_blocking_move_to_z(MIN(current_position[Z_AXIS] + 5, delta_height), fr_z);
+
+        // GbR: Raggiunge l'area xy di parcheggio
+        do_blocking_move_to_xy(park.x, park.y, fr_xy);
+
+        // GbR: Raggiunge l'area z di parcheggio
+        do_blocking_move_to_z(MIN(park.z, delta_height), fr_z);
+
+        return;
         break;
 
       default: // Raise to at least the Z-park height
-        do_blocking_move_to_z(MAX(park.z, current_position[Z_AXIS]), fr_z);
+        do_blocking_move_to_z(MIN(MAX(park.z, current_position[Z_AXIS]), delta_height), fr_z);
     }
 
     do_blocking_move_to_xy(park.x, park.y, fr_xy);
