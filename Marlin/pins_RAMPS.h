@@ -109,19 +109,38 @@
   #define Z_CS_PIN         40
 #endif
 
-#define E0_STEP_PIN        26
-#define E0_DIR_PIN         28
-#define E0_ENABLE_PIN      24
-#ifndef E0_CS_PIN
-  #define E0_CS_PIN        42
-#endif
+// GbR : Queta modifica imposta l'estrusore primario a sinistra quando ci sono
+//       due estrusori. Per il momento è disabilitata in quanto è preferibile
+//       invertire la connessione al momento del montaggio
+#if EXTRUDERS < 100
+  #define E0_STEP_PIN                           26
+  #define E0_DIR_PIN                            28
+  #define E0_ENABLE_PIN                         24
+  #ifndef E0_CS_PIN
+    #define E0_CS_PIN                           42
+  #endif
 
-#define E1_STEP_PIN        36
-#define E1_DIR_PIN         34
-#define E1_ENABLE_PIN      30
-#ifndef E1_CS_PIN
-  #define E1_CS_PIN        44
-#endif
+  #define E1_STEP_PIN                           36
+  #define E1_DIR_PIN                            34
+  #define E1_ENABLE_PIN                         30
+  #ifndef E1_CS_PIN
+    #define E1_CS_PIN                           44
+  #endif
+#else
+  #define E1_STEP_PIN                           26
+  #define E1_DIR_PIN                            28
+  #define E1_ENABLE_PIN                         24
+  #ifndef E1_CS_PIN
+    #define E1_CS_PIN                           42
+  #endif
+
+  #define E0_STEP_PIN                           36
+  #define E0_DIR_PIN                            34
+  #define E0_ENABLE_PIN                         30
+  #ifndef E0_CS_PIN
+    #define E0_CS_PIN                           44
+  #endif
+#endif // GbR
 
 /**
  * Default pins for TMC software SPI
@@ -191,9 +210,11 @@
 //
 // Temperature Sensors
 //
+//GbR: modificato la posizione dei sensori di temperatura per essere ordinati
+//     in una sequenza logica Ugello1, Ugello2, Piano scaldato
 #define TEMP_0_PIN         13   // Analog Input
-#define TEMP_1_PIN         14   // Analog Input
-#define TEMP_BED_PIN       15   // Analog Input
+#define TEMP_1_PIN         14   // Analog Input (GbR: orig=15)
+#define TEMP_BED_PIN       15   // Analog Input (GbR: orig=14)
 
 // SPI for Max6675 or Max31855 Thermocouple
 #if DISABLED(SDSUPPORT)
@@ -516,7 +537,7 @@
       #define SD_DETECT_PIN     49
       #define PAUSE_PIN         41
 
-    #elif ENABLED(MINIPANEL)
+/*    #elif ENABLED(MINIPANEL)
 
       #define BEEPER_PIN        42
       // not connected to a pin
@@ -538,6 +559,28 @@
 
       #define SD_DETECT_PIN     49
       #define PAUSE_PIN         64
+*/
+
+    #elif ENABLED(MINIPANEL) // GbR: Configurazione per Minipanel FYSETC
+
+      #define BEEPER_PIN 37
+
+      #define LCD_BACKLIGHT_PIN -1 // backlight LED on A11/D65
+      // Pins for DOGM SPI LCD Support
+      #define DOGLCD_A0  16
+      #define DOGLCD_CS  17
+
+      // GLCD features
+      #define LCD_CONTRAST 200
+
+      #define BTN_EN1 31
+      #define BTN_EN2 33
+      #define BTN_ENC 35  //the click switch
+
+      #define SD_DETECT_PIN 49
+      #define LCD_RESET_PIN  23
+      #define SDSS   53
+      #define KILL_PIN -1
 
     #elif ENABLED(ZONESTAR_LCD)
 

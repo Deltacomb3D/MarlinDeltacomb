@@ -899,7 +899,7 @@ void CardReader::printingHasFinished() {
     sdprinting = false;
 
     #if ENABLED(POWER_LOSS_RECOVERY)
-      removeJobRecoveryFile();
+      job_recovery_void(); // GbR : POWERLOSS TO EEPROM
     #endif
 
     #if ENABLED(SD_FINISHED_STEPPERRELEASE) && defined(SD_FINISHED_RELEASECOMMAND)
@@ -971,7 +971,7 @@ void CardReader::printingHasFinished() {
   }
 
   void CardReader::removeJobRecoveryFile() {
-    job_recovery_info.valid_head = job_recovery_info.valid_foot = job_recovery_commands_count = 0;
+    job_recovery_info.valid_head = job_recovery_info.valid_foot = 0;
     if (jobRecoverFileExists()) {
       closefile();
       removeFile(job_recovery_file_name);

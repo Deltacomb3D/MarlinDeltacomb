@@ -33,6 +33,8 @@ class MarlinSettings {
 
     static void reset();
     static bool save();   // Return 'true' if data was saved
+    static void save_job_recovery_data(); // GbR
+    static void load_job_recovery_data(); // GbR
 
     FORCE_INLINE static bool init_eeprom() {
       reset();

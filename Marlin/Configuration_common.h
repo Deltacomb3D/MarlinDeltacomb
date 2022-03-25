@@ -116,7 +116,7 @@
  *
  * :[2400, 9600, 19200, 38400, 57600, 115200, 250000, 500000, 1000000]
  */
-#define BAUDRATE 1000000
+#define BAUDRATE 250000
 
 // Enable the Bluetooth serial interface on AT90USB devices
 //#define BLUETOOTH
@@ -129,6 +129,7 @@
 
 #ifdef DC_RAMPS_19V_SUPPLY
   #define MOTHERBOARD BOARD_RAMPS_14_EEB
+  //#define MOTHERBOARD BOARD_MKS_GEN_L //GbR: Test per MKS GEN L (DC rev.5)
 #else
   #define MOTHERBOARD BOARD_RAMPS_14_EFF
 #endif
@@ -185,12 +186,15 @@
   #endif
 #endif
 
+// GbR: definizioni per l'angolo del servo nella commutazione dei nozzle e
+//      parametro di offset inserito qui per agevolare la configurazione
+
 // A dual-nozzle that uses a servomotor to raise/lower one of the nozzles
 //#define SWITCHING_NOZZLE
 #if ENABLED(SWITCHING_NOZZLE)
   #define SWITCHING_NOZZLE_SERVO_NR 0
-  #define SWITCHING_NOZZLE_SERVO_ANGLES { 180, 100 } 
-  //#define HOTEND_OFFSET_Z { 0.0, 0.0 }
+  #define SWITCHING_NOZZLE_SERVO_ANGLES { 10, 150 }  
+  #define HOTEND_OFFSET_X {0.0, HOTEND_OFFSET}
 #endif
 
 /**
@@ -536,7 +540,7 @@
 
   #if ENABLED(DELTA_AUTO_CALIBRATION) || ENABLED(DELTA_CALIBRATION_MENU)
     // Set the radius for the calibration probe points - max DELTA_PRINTABLE_RADIUS for non-eccentric probes
-    #define DELTA_CALIBRATION_RADIUS 82.5 // mm
+    #define DELTA_CALIBRATION_RADIUS DELTA_PRINTABLE_RADIUS - 15 // mm
     // Set the steprate for papertest probing
     #define PROBE_MANUALLY_STEP 0.03 // mm
   #endif
@@ -871,9 +875,18 @@
  *      O-- FRONT --+
  *    (0,0)
  */
-#define X_PROBE_OFFSET_FROM_EXTRUDER 0 // X offset: -left  +right  [of the nozzle]
+
+// GbR: Quando ci sono due hotend, la testina viene spostata per avere il nozzle
+//      primario allineato ai punti di probe che dovranno essere misurati in 
+//      fase di calibrazione.
+#if EXTRUDERS < 2
+  #define X_PROBE_OFFSET_FROM_EXTRUDER 0 // X offset: -left  +right  [of the nozzle]
+#else
+  #define X_PROBE_OFFSET_FROM_EXTRUDER 8 // X offset: -left  +right  [of the nozzle]
+#endif
+
 #define Y_PROBE_OFFSET_FROM_EXTRUDER 0 // Y offset: -front +behind [the nozzle]
-#define Z_PROBE_OFFSET_FROM_EXTRUDER -0.1 // Z offset: -below +above  [the nozzle]
+#define Z_PROBE_OFFSET_FROM_EXTRUDER 1.0 // Z offset: -below +above  [the nozzle]
 
 // Certain types of probes need to stay away from edges
 #define MIN_PROBE_EDGE 10
@@ -1069,10 +1082,10 @@
  * For other boards you may need to define FIL_RUNOUT_PIN, FIL_RUNOUT2_PIN, etc.
  * By default the firmware assumes HIGH=FILAMENT PRESENT.
  */
-#define FILAMENT_RUNOUT_SENSOR
+//#define FILAMENT_RUNOUT_SENSOR
 #if ENABLED(FILAMENT_RUNOUT_SENSOR)
   #define NUM_RUNOUT_SENSORS  EXTRUDERS     // Number of sensors, up to one per extruder. Define a FIL_RUNOUT#_PIN for each.
-  #define FIL_RUNOUT_INVERTING false // set to true to invert the logic of the sensor.
+  #define FIL_RUNOUT_INVERTING true // set to true to invert the logic of the sensor.
   #define FIL_RUNOUT_PULLUP          // Use internal pullup for filament runout pins.
   #define FILAMENT_RUNOUT_SCRIPT "M600"
 #endif
@@ -1292,7 +1305,7 @@
 #endif
 
 // Delta only homes to Z
-#define HOMING_FEEDRATE_Z  (200*60)
+#define HOMING_FEEDRATE_Z (200*60)
 
 // @section calibrate
 
@@ -1674,7 +1687,7 @@
 // Note: Usually sold with a white PCB.
 //
 #define REPRAP_DISCOUNT_SMART_CONTROLLER
-
+//#define MINIPANEL // GbR: Configurazione per Minipanel FYSETC
 //
 // ULTIMAKER Controller.
 //
@@ -2010,13 +2023,13 @@
  * LED Type. Enable only one of the following two options.
  *
  */
-//#define RGB_LED
+//#define RGB_LED // GbR: Abilitare per i colori del Minipanel FYSETC
 //#define RGBW_LED
 
 #if ENABLED(RGB_LED) || ENABLED(RGBW_LED)
-  #define RGB_LED_R_PIN 34
-  #define RGB_LED_G_PIN 43
-  #define RGB_LED_B_PIN 35
+  #define RGB_LED_R_PIN 25 //34 //GbR:Minipanel FYSETC
+  #define RGB_LED_G_PIN 27 //43 //GbR:Minipanel FYSETC
+  #define RGB_LED_B_PIN 29 //35 //GbR:Minipanel FYSETC
   #define RGB_LED_W_PIN -1
 #endif
 

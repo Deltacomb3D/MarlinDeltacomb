@@ -110,7 +110,7 @@
   /* nothing here yet */
 
 // Common serial messages
-#define MSG_MARLIN "Marlin"
+#define MSG_MARLIN "DELTACOMB 3D PROJECT"
 
 // Serial Console Messages (do not translate those!)
 

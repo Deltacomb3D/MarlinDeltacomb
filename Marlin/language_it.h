@@ -33,10 +33,11 @@
 #define MAPPER_C2C3
 #define DISPLAY_CHARSET_ISO10646_1
 
-#define WELCOME_MSG                         MACHINE_NAME _UxGT(" pronto.")
+#define WELCOME_MSG                         _UxGT("Pronta a stampare.")
 #define MSG_BACK                            _UxGT("Esci")
 #define MSG_SD_INSERTED                     _UxGT("SD Card inserita")
 #define MSG_SD_REMOVED                      _UxGT("SD Card rimossa")
+#define MSG_SD_FILE_NOT_FOUND               _UxGT("File non trovato")
 #define MSG_LCD_ENDSTOPS                    _UxGT("Endstop")
 #define MSG_MAIN                            _UxGT("Menu principale")
 #define MSG_AUTOSTART                       _UxGT("Autostart")
@@ -57,13 +58,13 @@
 #define MSG_HOME_OFFSETS_APPLIED            _UxGT("Offset applicato")
 #define MSG_SET_ORIGIN                      _UxGT("Imposta Origine")
 #define MSG_PREHEAT_1                       _UxGT("Preriscalda 210°")
-#define MSG_PREHEAT_1_N                     _UxGT("Preris.210°")
+#define MSG_PREHEAT_1_N                     _UxGT("Preris.") // GbR: Generic Preheat
 #define MSG_PREHEAT_1_ALL                   MSG_PREHEAT_1_N _UxGT("Tutto")
 #define MSG_PREHEAT_1_END                   MSG_PREHEAT_1_N _UxGT("Ugello")
 #define MSG_PREHEAT_1_BEDONLY               MSG_PREHEAT_1_N _UxGT("Piatto")
 #define MSG_PREHEAT_1_SETTINGS              MSG_PREHEAT_1_N _UxGT("conf")
 #define MSG_PREHEAT_2                       _UxGT("Preriscalda 240°")
-#define MSG_PREHEAT_2_N                     _UxGT("Preris.240° ")
+#define MSG_PREHEAT_2_N                     _UxGT("Preris.") // GbR: Generic Preheat
 #define MSG_PREHEAT_2_ALL                   MSG_PREHEAT_2_N _UxGT("Tutto")
 #define MSG_PREHEAT_2_END                   MSG_PREHEAT_2_N _UxGT("Ugello")
 #define MSG_PREHEAT_2_BEDONLY               MSG_PREHEAT_2_N _UxGT("Piatto")
@@ -271,6 +272,7 @@
 #define MSG_CONTROL_RETRACT_RECOVER_SWAPF   _UxGT("S UnRet V")
 #define MSG_AUTORETRACT                     _UxGT("AutoRitrai")
 #define MSG_FILAMENTCHANGE                  _UxGT("Cambia filamento")
+#define MSG_FILAMENTCHANGE_2                _UxGT("Cambia filam.") // GbR: Shorted Message (MSG_FILAMENTCHANGE)
 #define MSG_FILAMENTLOAD                    _UxGT("Carica filamento")
 #define MSG_FILAMENTUNLOAD                  _UxGT("Rimuovi filamento")
 #define MSG_FILAMENTUNLOAD_ALL              _UxGT("Rimuovi tutto")
@@ -334,6 +336,18 @@
 #define MSG_INFO_PROTOCOL                   _UxGT("Protocollo")
 #define MSG_CASE_LIGHT                      _UxGT("Luci Case")
 #define MSG_CASE_LIGHT_BRIGHTNESS           _UxGT("Luminosita' Luci")
+
+// GbR: New Features Messages
+#define MSG_OFFSETS_MENU                    _UxGT("Strumenti Offsets")
+#define MSG_HOTEND_OFFSET_X                 _UxGT("2° ugello X")
+#define MSG_HOTEND_OFFSET_Y                 _UxGT("2° ugello Y")
+#define MSG_HOTEND_OFFSET_Z                 _UxGT("2° ugello Z")
+
+#define MSG_JOB_RECOVERY_CONFIRM            _UxGT(" Avviare?")
+
+#define MSG_YES                             _UxGT("SI")
+#define MSG_NO                              _UxGT("NO")
+// GbR: -----------------------
 
 #if LCD_WIDTH >= 20
   #define MSG_INFO_PRINT_COUNT              _UxGT("Contat. stampa")

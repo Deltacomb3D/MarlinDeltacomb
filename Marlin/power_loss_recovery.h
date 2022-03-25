@@ -83,18 +83,14 @@ enum JobRecoveryPhase : unsigned char {
   JOB_RECOVERY_YES,
   JOB_RECOVERY_DONE
 };
+
 extern JobRecoveryPhase job_recovery_phase;
 
-#if HAS_LEVELING
-  #define APPEND_CMD_COUNT 9
-#else
-  #define APPEND_CMD_COUNT 7
-#endif
-
-extern char job_recovery_commands[BUFSIZE + APPEND_CMD_COUNT][MAX_CMD_SIZE];
-extern uint8_t job_recovery_commands_count;
-
-void check_print_job_recovery();
-void save_job_recovery_info(const bool force);
+bool job_recovery_check();
+void job_recovery_save(const bool force);
+void job_recovery_dump_data();
+void job_recovery_void();
+bool job_recovery_resume(uint8_t index, char * command);
+void job_recovery_void();
 
 #endif // _POWER_LOSS_RECOVERY_H_

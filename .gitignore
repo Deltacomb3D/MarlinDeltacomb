@@ -150,5 +150,10 @@ cmake-build-*
 
 buildroot
 .travis.xml
+.vscode
+.piolibdeps
+.piolib
+.pio
+.gitignore
+src
 platformio.ini
-process-palette.json
