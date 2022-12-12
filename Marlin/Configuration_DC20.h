@@ -10,8 +10,8 @@
 
 #define DELTA_PRINTABLE_RADIUS 95.0 // mm
 #define DELTA_DIAGONAL_ROD 200.0 // mm
-//#define DELTA_HEIGHT 245.00 // L'altezza predefinita è più o meno 5mm maggiore dell'altezza massima
-#define DELTA_HEIGHT 240.00 // Altezza delle stampanti 3.5
+#define DELTA_HEIGHT 245.00 // L'altezza predefinita è più o meno 5mm maggiore dell'altezza massima
+//#define DELTA_HEIGHT 240.00 // Altezza delle stampanti 3.5
 #define DELTA_RADIUS 89.0 //mm  Get this value from auto calibrate
 
 #define JOB_ABORT_ROUNTINE "G91\nG1 E-4\nG28\nM524"
@@ -26,7 +26,7 @@
 //#define DC_RAMPS_19V_SUPPLY
 
 // TMC Drivers
-#define HAS_DRIVER_TMC
+//#define HAS_DRIVER_TMC
 
 // Runout sensor
-#define FILAMENT_RUNOUT_SENSOR
+//#define FILAMENT_RUNOUT_SENSOR

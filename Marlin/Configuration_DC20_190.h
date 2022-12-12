@@ -20,7 +20,7 @@
 #define FILAMENT_UNLOAD_PURGE_LENGTH         1
 
 // Has Power loss circuit modifications
-#define POWER_LOSS_RECOVERY
+//#define POWER_LOSS_RECOVERY
 
 // DC NewGen 19v + Ramps RRD
 //#define DC_RAMPS_19V_SUPPLY
@@ -29,4 +29,4 @@
 //#define HAS_DRIVER_TMC
 
 // Runout sensor
-#define FILAMENT_RUNOUT_SENSOR
+//#define FILAMENT_RUNOUT_SENSOR

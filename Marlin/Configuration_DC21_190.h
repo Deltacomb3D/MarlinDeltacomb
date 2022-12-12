@@ -10,7 +10,7 @@
 
 #define DELTA_PRINTABLE_RADIUS 95.0 // mm
 #define DELTA_DIAGONAL_ROD 189.0 // mm
-#define DELTA_HEIGHT 405.00 // L'altezza predefinita è più o meno 5mm maggiore dell'altezza massima
+#define DELTA_HEIGHT 410.00 // L'altezza predefinita è più o meno 5mm maggiore dell'altezza massima
 #define DELTA_RADIUS 89.0 //mm  Get this value from auto calibrate
 
 #define JOB_ABORT_ROUNTINE "G91\nG1 E-4\nG28\nM524"

@@ -26,17 +26,24 @@
 /**
  * Deltacomb preconfiguration shortcut. Available setups :
  *
- * PRINTER_MODEL_DC20       - Deltacomb DC-20
- * PRINTER_MODEL_DC20HB     - Deltacomb DC-20 + Heat Bed
- * PRINTER_MODEL_DC20FC     - Deltacomb DC-20 + Flux Capacitor 2x
- * PRINTER_MODEL_DC20FCHB   - Deltacomb DC-20 + Flux Capacitor 2x + Heat Bed
- * PRINTER_MODEL_DC202E     - Deltacomb DC-20 + Dual Extruder
- * PRINTER_MODEL_DC202EHB   - Deltacomb DC-20 + Dual Extruder + Heat Bed
- * 
- * PRINTER_MODEL_DC20_V35   - Deltacomb DC-20 (v3.5)
- * PRINTER_MODEL_DC20HB_V35 - Deltacomb DC-20 + Heat Bed (v3.5)
+ * PRINTER_MODEL_DC20         - DC-20
+ * PRINTER_MODEL_DC20_190     - DC-20 (braccetti da 190mm)
+ * PRINTER_MODEL_DC20FC       - DC-20 + Flux Capacitor 2x
+ * PRINTER_MODEL_DC20FCHB     - DC-20 + Flux Capacitor 2x + Heat Bed
+ * PRINTER_MODEL_DC20FCHB_190 - DC-20 + Flux Capacitor 2x (braccetti da 190mm)
+ * PRINTER_MODEL_DC20HB       - DC-20 + Heat Bed 
+ * PRINTER_MODEL_DC20HB_190   - DC-20 + Heat Bed (braccetti da 190mm)
+ * PRINTER_MODEL_DC202E       - DC-20 + Dual Extruder
+ * PRINTER_MODEL_DC202EHB     - DC-20 + Dual Extruder + Heat Bed
+ * PRINTER_MODEL_DC202EHB_190 - DC-20 + Dual Extruder + Heat Bed (braccetti da 190mm)
+ * PRINTER_MODEL_DC21         - DC-21 (DC-20 Extended)
+ * PRINTER_MODEL_DC21_190     - DC-21 (DC-20 Extended) (braccetti da 190mm)
+ * PRINTER_MODEL_DC30         - DC-30 
+ * ---
+ * PRINTER_MODEL_DC20_V35     - DC-20 (v3.5)
+ * PRINTER_MODEL_DC20HB_V35   - DC-20 + Heat Bed (v3.5)
  *
- * PRINTER_MODEL_DC21       - Deltacomb DC-21 (DC-20 Extended)
+
  */
 
 #define PRINTER_MODEL_DC20 "Configuration_DC20.h"
@@ -50,16 +57,17 @@
 #define PRINTER_MODEL_DC202EHB "Configuration_DC202EHB.h"
 #define PRINTER_MODEL_DC202EHB_190 "Configuration_DC202EHB_190.h"
 #define PRINTER_MODEL_DC21_190 "Configuration_DC21_190.h"
+#define PRINTER_MODEL_DC30 "Configuration_DC30.h"
+
 
 #include "boards.h"
 #include "macros.h"
 #include "Version.h"
-#include PRINTER_MODEL_DC20HB
+#include PRINTER_MODEL_DC30
 #include "Configuration_common.h"
 #include "Conditionals_LCD.h"
 #include "drivers.h"
 #include "Configuration_adv.h"
-//#include "Configuration_adv.h"
 
 #if USE_MARLINSERIAL
   #define HardwareSerial_h // trick to disable the standard HWserial

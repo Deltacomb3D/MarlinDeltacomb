@@ -154,9 +154,6 @@ buildroot
 .piolibdeps
 .piolib
 .pio
-<<<<<<< HEAD
 .gitignore
-=======
->>>>>>> 44c48b0e52befce08cb2ba125366fd7528513225
 src
 platformio.ini

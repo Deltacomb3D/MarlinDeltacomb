@@ -8,7 +8,7 @@
 #define HOTEND_OFFSET 16.00
 #define NUM_SERVOS 1
 
-#define TEMP_SENSOR_1 11
+#define TEMP_SENSOR_1 5
 #define TEMP_SENSOR_BED 5
 
 #define DELTA_PRINTABLE_RADIUS 95.0 // mm
